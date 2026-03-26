@@ -2,80 +2,70 @@
 
 React + Firebase дээр суурилсан ажлын зах зээлийн платформ.
 
-## Хуудасны бүтэц
+## Тохируулах
 
-| Хуудас | Зам | Тайлбар |
-|--------|-----|---------|
-| Нэвтрэх | `/login` | Email/password бүртгэл, нэвтрэлт |
-| Нүүр | `/` | Цэсний товч холбоос |
-| Ажил хайх | `/ajil` | Ажлын зарууд |
-| Ажилтан хайх | `/ajiltan` | Ажилчдын зарууд |
-| Дадлага | `/dadlaga` | Дадлагын зарууд |
-| Сургалт | `/surgalt` | Сургалтын зарууд |
-| Санхүү | `/sanhuu` | Үлдэгдэл, гүйлгээ, шилжүүлэг |
-| Шилжүүлэг | `/sanhuu/shiljuuleg` | Шууд / Барилттай сонголт |
-| Барилттай гүйлгээ | `/sanhuu/escrow/:id` | Гүйлгээний дэлгэрэнгүй |
-| Профайл | `/profile` | Хувийн мэдээлэл |
-
-## Firebase Тохиргоо
-
-### 1. Firebase Console дээр шинэ project үүсгэнэ
-
-### 2. `.env` файл үүсгэж тохиргоо оруулна:
-```
-VITE_FIREBASE_API_KEY=xxx
-VITE_FIREBASE_AUTH_DOMAIN=xxx.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=xxx
-VITE_FIREBASE_STORAGE_BUCKET=xxx.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=xxx
-VITE_FIREBASE_APP_ID=xxx
-```
-
-> Эсвэл `src/firebase.js` дотор шууд утгыг нь оруулна уу.
-
-### 3. Authentication идэвхжүүлэх
-Firebase Console → Authentication → Sign-in method → Email/Password → Enable
-
-### 4. Firestore Database үүсгэх
-Firebase Console → Firestore Database → Create database (Production mode)
-
-### 5. Security rules байршуулах
+### 1. Репо clone хийх
 ```bash
-firebase deploy --only firestore:rules
-```
-
-### 6. Indexes байршуулах
-```bash
-firebase deploy --only firestore:indexes
-```
-
-## Суулгах
-
-```bash
+git clone https://github.com/Buldruu/job.git
+cd job
 npm install
+```
+
+### 2. Firebase тохиргоо
+`.env.example` файлыг хуулж `.env` нэртэй файл үүсгэнэ:
+```bash
+cp .env.example .env
+```
+
+`.env` файлд өөрийн Firebase утгуудыг оруулна:
+```
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+> Firebase Console → Project Settings → Your apps → Web app → firebaseConfig
+
+### 3. Firebase дээр идэвхжүүлэх
+- **Authentication** → Sign-in method → Email/Password → Enable
+- **Firestore Database** → Create database (Production mode)
+- Security rules байршуулах:
+```bash
+firebase deploy --only firestore:rules,firestore:indexes
+```
+
+### 4. Ажиллуулах
+```bash
 npm run dev
 ```
 
+---
+
+## Хуудасны бүтэц
+
+| Хуудас | Тайлбар |
+|--------|---------|
+| `/login` | Нэвтрэх / Бүртгүүлэх / Нууц үг сэргээх |
+| `/` | Нүүр цэс |
+| `/ajil` | Ажлын зарууд |
+| `/ajiltan` | Ажилтны зарууд |
+| `/dadlaga` | Дадлагын зарууд |
+| `/surgalt` | Сургалтын зарууд |
+| `/sanhuu` | Санхүү — үлдэгдэл, гүйлгээ |
+| `/sanhuu/shiljuuleg` | Шууд / Барилттай шилжүүлэг |
+| `/sanhuu/escrow/:id` | Барилттай гүйлгээний дэлгэрэнгүй |
+| `/profile` | Профайл засах |
+
 ## Барилттай шилжүүлэгийн урсгал
-
 ```
-Илгээгч → Шилжүүлэг (барилттай) → Мөнгийг хасаж хадгална
-                                         ↓
-                              Хүлээн авагч ажлаа дуусгана
-                                         ↓
-                              "Ажлаа дуусгалаа" товч дарна
-                                         ↓
-                              Илгээгчид мэдэгдэл очно
-                                         ↓
-                              Илгээгч зөвшөөрвөл мөнгө шилжинэ
+Илгээгч шилжүүлэх → мөнгийг хасч хадгална 🔒
+     ↓
+Хүлээн авагч "Ажлаа дуусгалаа" дарна
+     ↓
+Илгээгч мэдэгдэл авна, зөвшөөрнө
+     ↓
+Мөнгө хүлээн авагчид шилжинэ ✅
 ```
-
-## Firestore Collections
-
-- `users` — Хэрэглэгчийн профайл, үлдэгдэл
-- `transactions` — Гүйлгээний түүх
-- `escrows` — Барилттай шилжүүлэгүүд
-- `jobs` — Ажлын зарууд
-- `workers` — Ажилтны зарууд
-- `internships` — Дадлагын зарууд
-- `courses` — Сургалтын зарууд

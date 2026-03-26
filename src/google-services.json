@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "629971119042",
+    "project_id": "jobhub-c671c",
+    "storage_bucket": "jobhub-c671c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:629971119042:android:f3fb1fbded3293672e445b",
+        "android_client_info": {
+          "package_name": "build.haga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJE3O2eJ0wnsleZVyeFJKOLp68t3BoXU4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
