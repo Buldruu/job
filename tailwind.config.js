@@ -4,54 +4,25 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
-        display: ['Sora', 'sans-serif'],
+        sans: ['Nunito', 'sans-serif'],
+        display: ['Lexend', 'sans-serif'],
       },
       colors: {
-        cream: {
-          50:  '#FDFCF8',
-          100: '#FAF8F2',
-          200: '#F4F0E6',
-          300: '#EAE4D6',
-          400: '#D8CFC0',
+        brand: {
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          500: '#4f63d2',
+          600: '#3b4fc0',
+          700: '#2d3fa8',
+          900: '#1a2466',
         },
-        ink: {
-          900: '#1C1917',
-          700: '#3D3730',
-          500: '#6B6058',
-          300: '#A89F97',
-          100: '#D4CEC8',
-        },
-        amber: {
-          50:  '#FFF8F0',
-          100: '#FEECD9',
-          400: '#F5A623',
-          500: '#E8891A',
-          600: '#D4720F',
-          700: '#B85E0A',
-        },
-        sage: {
-          50:  '#F2F7F4',
-          100: '#E0EDE5',
-          400: '#6BA882',
-          500: '#4E9468',
-          600: '#3B7D53',
-        },
-        rose: {
-          50:  '#FFF2F2',
-          400: '#F87474',
-          500: '#E85555',
+        dark: {
+          900: '#0d0f1a',
+          800: '#13162b',
+          700: '#1a1f3a',
+          600: '#232849',
+          500: '#2d3360',
         }
-      },
-      boxShadow: {
-        'soft':   '0 2px 12px rgba(28,25,23,0.06)',
-        'medium': '0 4px 24px rgba(28,25,23,0.10)',
-        'card':   '0 1px 3px rgba(28,25,23,0.08), 0 4px 16px rgba(28,25,23,0.06)',
-        'amber':  '0 4px 20px rgba(232,137,26,0.25)',
-      },
-      borderRadius: {
-        '2xl': '16px',
-        '3xl': '24px',
       }
     },
   },

@@ -152,12 +152,12 @@ export default function JobList({ type }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
-          <p className="text-ink-400 text-xs uppercase tracking-wider mb-1">Haga</p>
-          <h1 className="text-2xl font-display font-bold text-ink-900">{cfg.title}</h1>
+          <p className="text-white/40 text-xs uppercase tracking-wider mb-1">Haga</p>
+          <h1 className="text-2xl font-display font-bold text-white">{cfg.title}</h1>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
+          className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-brand-500/30 transition-all"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -173,13 +173,13 @@ export default function JobList({ type }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Хайх..."
-          className="flex-1 input-field text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition"
+          className="flex-1 bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition"
         />
         {cfg.fields.some(f => f.key === 'chiglel') && (
           <select
             value={filterChiglel}
             onChange={e => setFilterChiglel(e.target.value)}
-            className="input-field text-sm text-white focus:outline-none focus:border-brand-500 transition"
+            className="bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition"
           >
             {chiglels.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -192,7 +192,7 @@ export default function JobList({ type }) {
           <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center text-ink-300 animate-fade-up-d1">
+        <div className="glass rounded-2xl p-12 text-center text-white/30 animate-fade-up-delay">
           <div className="text-4xl mb-3">📭</div>
           <p className="text-sm">Зар байхгүй байна</p>
         </div>
@@ -202,27 +202,27 @@ export default function JobList({ type }) {
             <button
               key={item.id}
               onClick={() => openDetail(item)}
-              className="card card-hover p-5 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+              className="glass glass-hover rounded-2xl p-5 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
               <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-sm font-bold text-amber-700 flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-brand-500/20 flex items-center justify-center text-sm font-bold text-brand-300 flex-shrink-0">
                   {(cfg.cardTitle(item)[0] || '?').toUpperCase()}
                 </div>
                 {item[cfg.salaryKey] && (
-                  <span className="text-xs badge bg-sage-100 text-sage-700 px-2 py-1 rounded-lg whitespace-nowrap">
+                  <span className="text-xs text-green-400 font-semibold bg-green-500/10 px-2 py-1 rounded-lg whitespace-nowrap">
                     {item[cfg.salaryKey]}₮
                   </span>
                 )}
               </div>
               <div className="font-display font-bold text-white text-base mb-1">{cfg.cardTitle(item)}</div>
-              {cfg.cardSub(item) && <div className="text-ink-500 text-sm">{cfg.cardSub(item)}</div>}
+              {cfg.cardSub(item) && <div className="text-white/50 text-sm">{cfg.cardSub(item)}</div>}
               {item.chiglel && (
                 <div className="mt-3">
-                  <span className="text-xs badge bg-amber-100 text-amber-700">{item.chiglel}</span>
+                  <span className="text-xs text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full">{item.chiglel}</span>
                 </div>
               )}
-              {item.hayg && <div className="text-ink-400 text-xs mt-2">📍 {item.hayg}</div>}
-              <div className="text-ink-300 text-xs mt-3">
+              {item.hayg && <div className="text-white/30 text-xs mt-2">📍 {item.hayg}</div>}
+              <div className="text-white/20 text-xs mt-3">
                 {item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN') || ''}
               </div>
             </button>
@@ -236,9 +236,9 @@ export default function JobList({ type }) {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-xl font-display font-bold text-white">{cfg.cardTitle(selected)}</h2>
-              {cfg.cardSub(selected) && <p className="text-ink-500 text-sm mt-1">{cfg.cardSub(selected)}</p>}
+              {cfg.cardSub(selected) && <p className="text-white/50 text-sm mt-1">{cfg.cardSub(selected)}</p>}
             </div>
-            <button onClick={() => { setSelected(null); setSelectedOwner(null); }} className="text-ink-300 hover:text-ink-700 transition p-1">
+            <button onClick={() => { setSelected(null); setSelectedOwner(null); }} className="text-white/30 hover:text-white transition p-1">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -250,24 +250,24 @@ export default function JobList({ type }) {
               if (!val) return null;
               return (
                 <div key={f.key}>
-                  <div className="text-ink-400 text-xs uppercase tracking-wider mb-1">{f.label}</div>
-                  <div className="text-ink-800 text-sm whitespace-pre-wrap">{val}</div>
+                  <div className="text-white/40 text-xs uppercase tracking-wider mb-1">{f.label}</div>
+                  <div className="text-white text-sm whitespace-pre-wrap">{val}</div>
                 </div>
               );
             })}
           </div>
           {selectedOwner && (
-            <div className="mt-5 pt-4 border-t border-cream-200">
-              <p className="text-ink-300 text-xs uppercase tracking-wider mb-3">Зар оруулагч</p>
+            <div className="mt-5 pt-4 border-t border-white/5">
+              <p className="text-white/30 text-xs uppercase tracking-wider mb-3">Зар оруулагч</p>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-sm font-bold text-white">
                   {(selectedOwner.ner || selected.email || '?')[0].toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-ink-900 text-sm font-medium">
+                  <div className="text-white text-sm font-medium">
                     {selectedOwner.ner ? `${selectedOwner.ovog || ''} ${selectedOwner.ner}`.trim() : selected.email}
                   </div>
-                  {selectedOwner.email && <div className="text-ink-400 text-xs">{selectedOwner.email}</div>}
+                  {selectedOwner.email && <div className="text-white/40 text-xs">{selectedOwner.email}</div>}
                 </div>
               </div>
             </div>
@@ -279,8 +279,8 @@ export default function JobList({ type }) {
       {showForm && (
         <Modal onClose={() => { setShowForm(false); setForm({}); }}>
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-display font-bold text-ink-900">{cfg.addTitle}</h2>
-            <button onClick={() => { setShowForm(false); setForm({}); }} className="text-ink-300 hover:text-ink-700 transition p-1">
+            <h2 className="text-lg font-display font-bold text-white">{cfg.addTitle}</h2>
+            <button onClick={() => { setShowForm(false); setForm({}); }} className="text-white/30 hover:text-white transition p-1">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -290,7 +290,7 @@ export default function JobList({ type }) {
             {cfg.fields.map(f => (
               <div key={f.key}>
                 <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">
-                  {f.label}{f.required && <span className="text-rose-400 ml-1">*</span>}
+                  {f.label}{f.required && <span className="text-red-400 ml-1">*</span>}
                 </label>
                 {f.textarea ? (
                   <textarea
@@ -298,13 +298,13 @@ export default function JobList({ type }) {
                     onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                     required={f.required}
                     rows={3}
-                    className="w-full input-field text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition resize-none"
+                    className="w-full bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition resize-none"
                   />
                 ) : f.key === 'chiglel' ? (
                   <select
                     value={form[f.key] || ''}
                     onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                    className="w-full input-field text-sm text-white focus:outline-none focus:border-brand-500 transition"
+                    className="w-full bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition"
                   >
                     <option value="">Сонгоно уу</option>
                     {chiglels.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
@@ -315,7 +315,7 @@ export default function JobList({ type }) {
                     value={form[f.key] || ''}
                     onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                     required={f.required}
-                    className="w-full input-field text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition"
+                    className="w-full bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition"
                   />
                 )}
               </div>
@@ -323,7 +323,7 @@ export default function JobList({ type }) {
             <button
               type="submit"
               disabled={saving}
-              className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
             >
               {saving
                 ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -339,8 +339,8 @@ export default function JobList({ type }) {
 function Modal({ children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink-900/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl p-6 w-full max-w-lg z-10 animate-fade-up shadow-medium border border-cream-300">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative glass rounded-2xl p-6 w-full max-w-lg z-10 animate-fade-up">
         {children}
       </div>
     </div>
