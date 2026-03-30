@@ -1,84 +1,97 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import {
-  collection, addDoc, query, where, onSnapshot,
+  collection, addDoc, query, onSnapshot,
   orderBy, serverTimestamp, doc, getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
+const chiglels = ['Бүгд', 'IT / Технологи', 'Санхүү', 'Маркетинг', 'Инженер', 'Эрүүл мэнд', 'Боловсрол', 'Дизайн', 'Бусад'];
+
 const configs = {
+  // Ажил хайж байгаа хүн өөрийн мэдээллээ оруулна (CV, овог нэр...)
   ajil: {
     title: 'Ажил хайх',
     addLabel: 'Зар нэмэх',
+    addTitle: 'Өөрийн мэдээлэл оруулах',
     collection: 'jobs',
     fields: [
-      { key: 'baiguulgiin_ner', label: 'Байгууллагын нэр', required: true },
-      { key: 'alban_tushaal', label: 'Албан тушаал', required: true },
-      { key: 'chadvar', label: 'Чадвар / Мэдлэг', required: false },
-      { key: 'turshlaga', label: 'Туршлага', required: false },
-      { key: 'tsalin', label: 'Цалин', required: false },
-      { key: 'chiglel', label: 'Чиглэл', required: false },
-      { key: 'hayg', label: 'Хаяг', required: false },
-      { key: 'ajilchinaas_huseh', label: 'Ажилтнаас хүсэх', textarea: true },
-      { key: 'nemelt', label: 'Нэмэлт', textarea: true },
+      { key: 'ovog',      label: 'Овог',            required: true  },
+      { key: 'ner',       label: 'Нэр',             required: true  },
+      { key: 'chadvar',   label: 'Чадвар',          required: false },
+      { key: 'turshlaga', label: 'Туршлага',        required: false },
+      { key: 'tsalin',    label: 'Хүссэн цалин (₮)', required: false },
+      { key: 'chiglel',   label: 'Чиглэл',          required: false },
+      { key: 'hayg',      label: 'Хаяг',            required: false },
+      { key: 'cv',        label: 'CV / Намтар',     required: false, textarea: true },
+      { key: 'nemelt',    label: 'Нэмэлт',          required: false, textarea: true },
     ],
-    cardTitle: (d) => d.alban_tushaal || 'Ажлын зар',
-    cardSub: (d) => d.baiguulgiin_ner,
+    cardTitle: (d) => d.ner ? `${d.ovog || ''} ${d.ner}`.trim() : 'Ажил хайгч',
+    cardSub:   (d) => d.chiglel,
+    salaryKey: 'tsalin',
   },
+
+  // Ажилтан хайж байгаа байгууллага зар оруулна (байгууллага, албан тушаал...)
   ajiltan: {
     title: 'Ажилтан хайх',
     addLabel: 'Зар нэмэх',
+    addTitle: 'Ажлын зар оруулах',
     collection: 'workers',
     fields: [
-      { key: 'ner', label: 'Нэр', required: true },
-      { key: 'chadvar', label: 'Чадвар', required: false },
-      { key: 'turshlaga', label: 'Туршлага', required: false },
-      { key: 'tsalin', label: 'Хүссэн цалин', required: false },
-      { key: 'chiglel', label: 'Чиглэл', required: false },
-      { key: 'hayg', label: 'Хаяг', required: false },
-      { key: 'cv', label: 'CV / Намтар', textarea: true },
-      { key: 'nemelt', label: 'Нэмэлт', textarea: true },
+      { key: 'baiguulgiin_ner',    label: 'Байгууллагын нэр',      required: true  },
+      { key: 'alban_tushaal',      label: 'Албан тушаал',          required: true  },
+      { key: 'chadvar',            label: 'Чадвар / Мэдлэг',       required: false },
+      { key: 'turshlaga',          label: 'Туршлага',              required: false },
+      { key: 'tsalin',             label: 'Цалин (₮)',             required: false },
+      { key: 'chiglel',            label: 'Чиглэл',                required: false },
+      { key: 'hayg',               label: 'Хаяг',                  required: false },
+      { key: 'ajilchinaas_huseh',  label: 'Ажилтнаас хүсэх',      required: false, textarea: true },
+      { key: 'nemelt',             label: 'Нэмэлт',                required: false, textarea: true },
     ],
-    cardTitle: (d) => d.ner || 'Ажилтан',
-    cardSub: (d) => d.chiglel,
+    cardTitle: (d) => d.alban_tushaal || 'Ажлын зар',
+    cardSub:   (d) => d.baiguulgiin_ner,
+    salaryKey: 'tsalin',
   },
+
   dadlaga: {
     title: 'Дадлага',
     addLabel: 'Зар нэмэх',
+    addTitle: 'Дадлагын зар оруулах',
     collection: 'internships',
     fields: [
-      { key: 'baiguulgiin_ner', label: 'Байгууллагын нэр', required: true },
-      { key: 'alban_tushaal', label: 'Дадлагын чиглэл', required: true },
-      { key: 'chadvar', label: 'Чадвар', required: false },
-      { key: 'turshlaga', label: 'Туршлага', required: false },
-      { key: 'tsalin', label: 'Цалин', required: false },
-      { key: 'chiglel', label: 'Чиглэл', required: false },
-      { key: 'hayg', label: 'Хаяг', required: false },
-      { key: 'ajilchinaas_huseh', label: 'Шаардлага', textarea: true },
-      { key: 'nemelt', label: 'Нэмэлт', textarea: true },
+      { key: 'baiguulgiin_ner',   label: 'Байгууллагын нэр',   required: true  },
+      { key: 'alban_tushaal',     label: 'Дадлагын чиглэл',    required: true  },
+      { key: 'chadvar',           label: 'Чадвар',             required: false },
+      { key: 'turshlaga',         label: 'Туршлага',           required: false },
+      { key: 'tsalin',            label: 'Цалин (₮)',          required: false },
+      { key: 'chiglel',           label: 'Чиглэл',             required: false },
+      { key: 'hayg',              label: 'Хаяг',               required: false },
+      { key: 'ajilchinaas_huseh', label: 'Шаардлага',          required: false, textarea: true },
+      { key: 'nemelt',            label: 'Нэмэлт',             required: false, textarea: true },
     ],
     cardTitle: (d) => d.alban_tushaal || 'Дадлага',
-    cardSub: (d) => d.baiguulgiin_ner,
+    cardSub:   (d) => d.baiguulgiin_ner,
+    salaryKey: 'tsalin',
   },
+
   surgalt: {
     title: 'Сургалт',
-    addLabel: 'Авах',
+    addLabel: 'Зар нэмэх',
+    addTitle: 'Сургалтын зар оруулах',
     collection: 'courses',
     fields: [
-      { key: 'baiguulga_ner', label: 'Байгууллага', required: true },
-      { key: 'ner', label: 'Сургалтын нэр', required: true },
-      { key: 'une_hansh', label: 'Үнэ ханш', required: false },
-      { key: 'hugatsaa', label: 'Хугацаа', required: false },
-      { key: 'hayg', label: 'Хаяг / Линк', required: false },
-      { key: 'nemelt', label: 'Дэлгэрэнгүй', textarea: true },
+      { key: 'baiguulga_ner', label: 'Байгууллага',     required: true  },
+      { key: 'ner',           label: 'Сургалтын нэр',   required: true  },
+      { key: 'une_hansh',     label: 'Үнэ ханш (₮)',    required: false },
+      { key: 'hugatsaa',      label: 'Хугацаа',         required: false },
+      { key: 'hayg',          label: 'Хаяг / Линк',     required: false },
+      { key: 'nemelt',        label: 'Дэлгэрэнгүй',     required: false, textarea: true },
     ],
     cardTitle: (d) => d.ner || 'Сургалт',
-    cardSub: (d) => d.baiguulga_ner,
+    cardSub:   (d) => d.baiguulga_ner,
+    salaryKey: 'une_hansh',
   },
 };
-
-const chiglels = ['Бүгд', 'IT / Технологи', 'Санхүү', 'Маркетинг', 'Инженер', 'Эрүүл мэнд', 'Боловсрол', 'Дизайн', 'Бусад'];
 
 export default function JobList({ type }) {
   const cfg = configs[type];
@@ -87,13 +100,15 @@ export default function JobList({ type }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [selectedOwner, setSelectedOwner] = useState(null);
   const [filterChiglel, setFilterChiglel] = useState('Бүгд');
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const [selectedOwner, setSelectedOwner] = useState(null);
 
   useEffect(() => {
+    setItems([]);
+    setLoading(true);
     const q = query(collection(db, cfg.collection), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
       setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -118,9 +133,10 @@ export default function JobList({ type }) {
 
   const openDetail = async (item) => {
     setSelected(item);
+    setSelectedOwner(null);
     if (item.uid) {
       const snap = await getDoc(doc(db, 'users', item.uid));
-      setSelectedOwner(snap.exists() ? snap.data() : null);
+      if (snap.exists()) setSelectedOwner(snap.data());
     }
   };
 
@@ -136,7 +152,7 @@ export default function JobList({ type }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
-          <p className="text-white/40 text-xs uppercase tracking-wider mb-1">JobHub</p>
+          <p className="text-white/40 text-xs uppercase tracking-wider mb-1">Haga</p>
           <h1 className="text-2xl font-display font-bold text-white">{cfg.title}</h1>
         </div>
         <button
@@ -159,13 +175,15 @@ export default function JobList({ type }) {
           placeholder="Хайх..."
           className="flex-1 bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500 transition"
         />
-        <select
-          value={filterChiglel}
-          onChange={e => setFilterChiglel(e.target.value)}
-          className="bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition"
-        >
-          {chiglels.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        {cfg.fields.some(f => f.key === 'chiglel') && (
+          <select
+            value={filterChiglel}
+            onChange={e => setFilterChiglel(e.target.value)}
+            className="bg-dark-700 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition"
+          >
+            {chiglels.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
       </div>
 
       {/* List */}
@@ -190,14 +208,9 @@ export default function JobList({ type }) {
                 <div className="w-9 h-9 rounded-xl bg-brand-500/20 flex items-center justify-center text-sm font-bold text-brand-300 flex-shrink-0">
                   {(cfg.cardTitle(item)[0] || '?').toUpperCase()}
                 </div>
-                {item.tsalin && (
-                  <span className="text-xs text-green-400 font-semibold bg-green-500/10 px-2 py-1 rounded-lg">
-                    {item.tsalin}₮
-                  </span>
-                )}
-                {item.une_hansh && (
-                  <span className="text-xs text-amber-400 font-semibold bg-amber-500/10 px-2 py-1 rounded-lg">
-                    {item.une_hansh}₮
+                {item[cfg.salaryKey] && (
+                  <span className="text-xs text-green-400 font-semibold bg-green-500/10 px-2 py-1 rounded-lg whitespace-nowrap">
+                    {item[cfg.salaryKey]}₮
                   </span>
                 )}
               </div>
@@ -231,22 +244,20 @@ export default function JobList({ type }) {
               </svg>
             </button>
           </div>
-
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
             {cfg.fields.map(f => {
               const val = selected[f.key];
               if (!val) return null;
               return (
-                <div key={f.key} className="flex flex-col gap-1">
-                  <span className="text-white/40 text-xs uppercase tracking-wider">{f.label}</span>
-                  <span className="text-white text-sm">{val}</span>
+                <div key={f.key}>
+                  <div className="text-white/40 text-xs uppercase tracking-wider mb-1">{f.label}</div>
+                  <div className="text-white text-sm whitespace-pre-wrap">{val}</div>
                 </div>
               );
             })}
           </div>
-
           {selectedOwner && (
-            <div className="mt-6 pt-5 border-t border-white/5">
+            <div className="mt-5 pt-4 border-t border-white/5">
               <p className="text-white/30 text-xs uppercase tracking-wider mb-3">Зар оруулагч</p>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-sm font-bold text-white">
@@ -254,7 +265,7 @@ export default function JobList({ type }) {
                 </div>
                 <div>
                   <div className="text-white text-sm font-medium">
-                    {selectedOwner.ovog ? `${selectedOwner.ovog} ${selectedOwner.ner}` : selected.email}
+                    {selectedOwner.ner ? `${selectedOwner.ovog || ''} ${selectedOwner.ner}`.trim() : selected.email}
                   </div>
                   {selectedOwner.email && <div className="text-white/40 text-xs">{selectedOwner.email}</div>}
                 </div>
@@ -267,8 +278,8 @@ export default function JobList({ type }) {
       {/* Add form modal */}
       {showForm && (
         <Modal onClose={() => { setShowForm(false); setForm({}); }}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-display font-bold text-white">Зар нэмэх</h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-display font-bold text-white">{cfg.addTitle}</h2>
             <button onClick={() => { setShowForm(false); setForm({}); }} className="text-white/30 hover:text-white transition p-1">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -314,7 +325,9 @@ export default function JobList({ type }) {
               disabled={saving}
               className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
             >
-              {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Хадгалах'}
+              {saving
+                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : 'Хадгалах'}
             </button>
           </form>
         </Modal>

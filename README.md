@@ -1,4 +1,4 @@
-# JobHub Mongolia 🇲🇳
+# Haga 🇲🇳
 
 React + Firebase дээр суурилсан ажлын зах зээлийн платформ.
 
