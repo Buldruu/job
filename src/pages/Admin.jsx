@@ -1,35 +1,30 @@
 import { useEffect, useState } from 'react';
-import { collection, query, onSnapshot, orderBy, where, doc, updateDoc, getDoc } from 'firebase/firestore';
+import {
+  collection, query, onSnapshot, orderBy,
+  where, doc, updateDoc
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+
+const fmt = (n) => Number(n || 0).toLocaleString('mn-MN') + '₮';
 
 export default function Admin() {
-  const { user, profile } = useAuth();
-  const navigate = useNavigate();
+  const { user, profile, loading } = useAuth();
   const [users, setUsers] = useState([]);
   const [online, setOnline] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [dbLoading, setDbLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState('users'); // users | online
+  const [tab, setTab] = useState('users');
 
-  // Guard: only admin
-  useEffect(() => {
-    if (!profile) return;
-    if (!profile.isAdmin) navigate('/', { replace: true });
-  }, [profile]);
-
-  // All users
   useEffect(() => {
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, snap => {
       setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      setDbLoading(false);
     });
   }, []);
 
-  // Online users (presence)
   useEffect(() => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
     const q = query(collection(db, 'presence'), where('lastSeen', '>', fiveMinAgo));
@@ -38,26 +33,72 @@ export default function Admin() {
     });
   }, []);
 
+  // Show loading while auth loads
+  if (loading) return (
+    <div className="p-8 flex justify-center py-24">
+      <div className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  // Not admin — show clear message instead of redirecting
+  if (!profile?.isAdmin) return (
+    <div className="p-8 max-w-lg">
+      <div className="card rounded-2xl p-10 text-center border border-red-100 bg-red-50">
+        <div className="text-4xl mb-4">🔒</div>
+        <h2 className="text-lg font-display font-bold text-red-600 mb-2">Хандах эрхгүй</h2>
+        <p className="text-gray-500 text-sm mb-4">
+          Танд Админ эрх байхгүй байна.
+        </p>
+        <div className="bg-white border border-red-100 rounded-xl px-4 py-3 text-left text-xs text-gray-500 space-y-1">
+          <p className="font-semibold text-gray-600 mb-2">Шалгах зүйлс:</p>
+          <p>1. Firebase Console → Firestore → <strong>users</strong> collection</p>
+          <p>2. Таны UID-тай document-ийг нээнэ</p>
+          <p>3. <code className="bg-red-50 px-1 rounded">isAdmin: true</code> талбар байгаа эсэх</p>
+          <p className="mt-2 text-brand-500">Таны UID: <strong>{user?.uid}</strong></p>
+        </div>
+      </div>
+    </div>
+  );
+
   const filtered = users.filter(u => {
     const s = search.toLowerCase();
-    return !s || (u.email||'').toLowerCase().includes(s)
-      || (u.ner||'').toLowerCase().includes(s)
-      || (u.ovog||'').toLowerCase().includes(s);
+    return !s
+      || (u.email || '').toLowerCase().includes(s)
+      || (u.ner || '').toLowerCase().includes(s)
+      || (u.ovog || '').toLowerCase().includes(s);
   });
 
   const stats = [
-    { label: 'Нийт хэрэглэгч', value: users.length, icon: '👥', color: 'bg-blue-50 border-blue-100 text-blue-700' },
-    { label: 'Онлайн (5мин)', value: online.length, icon: '🟢', color: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
-    { label: 'Энэ сар', value: users.filter(u => {
+    {
+      label: 'Нийт хэрэглэгч',
+      value: users.length,
+      icon: '👥',
+      color: 'bg-blue-50 border-blue-100 text-blue-700',
+    },
+    {
+      label: 'Онлайн (5мин)',
+      value: online.length,
+      icon: '🟢',
+      color: 'bg-emerald-50 border-emerald-100 text-emerald-700',
+    },
+    {
+      label: 'Энэ сар',
+      value: users.filter(u => {
         const d = u.createdAt?.toDate?.();
         if (!d) return false;
         const now = new Date();
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      }).length, icon: '📅', color: 'bg-violet-50 border-violet-100 text-violet-700' },
-    { label: 'Профайл бөглөсөн', value: users.filter(u => u.ner).length, icon: '✅', color: 'bg-amber-50 border-amber-100 text-amber-700' },
+      }).length,
+      icon: '📅',
+      color: 'bg-violet-50 border-violet-100 text-violet-700',
+    },
+    {
+      label: 'Профайл бөглөсөн',
+      value: users.filter(u => u.ner).length,
+      icon: '✅',
+      color: 'bg-amber-50 border-amber-100 text-amber-700',
+    },
   ];
-
-  if (!profile?.isAdmin) return null;
 
   return (
     <div className="p-8 max-w-5xl">
@@ -96,8 +137,10 @@ export default function Admin() {
 
       {/* Search */}
       <div className="relative mb-5 animate-fade-up-delay">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Нэр эсвэл имэйлээр хайх..."
@@ -107,7 +150,7 @@ export default function Admin() {
       {/* Users table */}
       {tab === 'users' && (
         <div className="card rounded-2xl overflow-hidden animate-fade-up-delay">
-          {loading ? (
+          {dbLoading ? (
             <div className="flex justify-center py-16">
               <div className="w-7 h-7 border-2 border-brand-400 border-t-transparent rounded-full animate-spin"/>
             </div>
@@ -115,11 +158,11 @@ export default function Admin() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-surf-100">
-                  <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">Хэрэглэгч</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">Чиглэл</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">Бүртгүүлсэн</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">Профайл</th>
-                  <th className="px-5 py-3.5"/>
+                  {['Хэрэглэгч', 'Чиглэл', 'Бүртгүүлсэн', 'Профайл', ''].map(h => (
+                    <th key={h} className="text-left px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -136,7 +179,7 @@ export default function Admin() {
                         </div>
                         <div>
                           <div className="text-gray-800 text-sm font-semibold">
-                            {u.ner ? `${u.ovog||''} ${u.ner}`.trim() : '—'}
+                            {u.ner ? `${u.ovog || ''} ${u.ner}`.trim() : '—'}
                           </div>
                           <div className="text-gray-400 text-xs">{u.email}</div>
                         </div>
@@ -173,7 +216,7 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Online users */}
+      {/* Online tab */}
       {tab === 'online' && (
         <div className="space-y-3 animate-fade-up-delay">
           {online.length === 0 ? (
@@ -195,14 +238,16 @@ export default function Admin() {
                 </div>
                 <div className="flex-1">
                   <div className="text-gray-800 text-sm font-semibold">
-                    {u?.ner ? `${u.ovog||''} ${u.ner}`.trim() : u?.email || o.id}
+                    {u?.ner ? `${u.ovog || ''} ${u.ner}`.trim() : u?.email || o.id}
                   </div>
                   {u?.chiglel && <div className="text-gray-400 text-xs">{u.chiglel}</div>}
                 </div>
-                {u && <button onClick={() => setSelected(u)}
-                  className="text-xs text-brand-500 hover:text-brand-700 font-semibold transition">
-                  Харах →
-                </button>}
+                {u && (
+                  <button onClick={() => setSelected(u)}
+                    className="text-xs text-brand-500 hover:text-brand-700 font-semibold transition">
+                    Харах →
+                  </button>
+                )}
               </div>
             );
           })}
@@ -225,9 +270,12 @@ export default function Admin() {
                 </div>
                 <div>
                   <h2 className="text-lg font-display font-bold text-gray-800">
-                    {selected.ner ? `${selected.ovog||''} ${selected.ner}`.trim() : '—'}
+                    {selected.ner ? `${selected.ovog || ''} ${selected.ner}`.trim() : '—'}
                   </h2>
                   <p className="text-gray-400 text-sm">{selected.email}</p>
+                  {selected.isAdmin && (
+                    <span className="text-xs bg-red-50 border border-red-100 text-red-500 px-2 py-0.5 rounded-full font-medium">Admin</span>
+                  )}
                 </div>
               </div>
               <button onClick={() => setSelected(null)} className="text-gray-300 hover:text-gray-500 transition">
@@ -237,15 +285,15 @@ export default function Admin() {
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {[
-                {label:'Чиглэл', value: selected.chiglel},
-                {label:'Чадвар', value: selected.chadvar},
-                {label:'Туршлага', value: selected.turshlaga},
-                {label:'Хаяг', value: selected.hayg},
-                {label:'CV / Намтар', value: selected.cv},
-                {label:'Нэмэлт', value: selected.nemelt},
-                {label:'Бүртгүүлсэн', value: selected.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')},
+                { label: 'Чиглэл',     value: selected.chiglel },
+                { label: 'Чадвар',     value: selected.chadvar },
+                { label: 'Туршлага',   value: selected.turshlaga },
+                { label: 'Хаяг',       value: selected.hayg },
+                { label: 'CV / Намтар',value: selected.cv },
+                { label: 'Нэмэлт',     value: selected.nemelt },
+                { label: 'Бүртгүүлсэн',value: selected.createdAt?.toDate?.()?.toLocaleDateString('mn-MN') },
               ].filter(r => r.value).map(row => (
                 <div key={row.label} className="bg-surf-50 rounded-xl px-4 py-3">
                   <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">{row.label}</div>
@@ -254,22 +302,25 @@ export default function Admin() {
               ))}
             </div>
 
-            {/* Admin badge toggle */}
-            <div className="mt-5 pt-4 border-t border-surf-100 flex items-center justify-between">
-              <span className="text-sm text-gray-500">Админ эрх</span>
-              <button
-                onClick={async () => {
-                  await updateDoc(doc(db, 'users', selected.id), { isAdmin: !selected.isAdmin });
-                  setSelected(s => ({...s, isAdmin: !s.isAdmin}));
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  selected.isAdmin
-                    ? 'bg-red-50 border border-red-200 text-red-500 hover:bg-red-100'
-                    : 'bg-brand-50 border border-brand-200 text-brand-600 hover:bg-brand-100'
-                }`}>
-                {selected.isAdmin ? '● Авах' : '○ Өгөх'}
-              </button>
-            </div>
+            {/* Admin toggle */}
+            {selected.id !== user?.uid && (
+              <div className="mt-5 pt-4 border-t border-surf-100 flex items-center justify-between">
+                <span className="text-sm text-gray-500">Админ эрх</span>
+                <button
+                  onClick={async () => {
+                    const newVal = !selected.isAdmin;
+                    await updateDoc(doc(db, 'users', selected.id), { isAdmin: newVal });
+                    setSelected(s => ({ ...s, isAdmin: newVal }));
+                  }}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    selected.isAdmin
+                      ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100'
+                      : 'bg-brand-50 border-brand-200 text-brand-600 hover:bg-brand-100'
+                  }`}>
+                  {selected.isAdmin ? '● Эрх авах' : '○ Эрх өгөх'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
