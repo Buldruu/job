@@ -1,28 +1,31 @@
 import { useEffect, useState } from 'react';
+import mammoth from 'mammoth';
 import {
-  collection, addDoc, query, onSnapshot,
-  orderBy, serverTimestamp, doc, getDoc, deleteDoc
+  collection, addDoc, query, onSnapshot, orderBy,
+  serverTimestamp, doc, getDoc, deleteDoc,
+  updateDoc, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
+import { StarDisplay, StarPicker } from '../components/RatingStars';
 
 const chiglels = ['Бүгд','IT / Технологи','Санхүү','Маркетинг','Инженер','Эрүүл мэнд','Боловсрол','Дизайн','Бусад'];
 
 const COLORS = [
-  { bg:'bg-blue-50',   border:'border-blue-100',   text:'text-blue-700',   avatar:'bg-blue-100 text-blue-600'   },
-  { bg:'bg-violet-50', border:'border-violet-100', text:'text-violet-700', avatar:'bg-violet-100 text-violet-600'},
-  { bg:'bg-emerald-50',border:'border-emerald-100',text:'text-emerald-700',avatar:'bg-emerald-100 text-emerald-600'},
-  { bg:'bg-amber-50',  border:'border-amber-100',  text:'text-amber-700',  avatar:'bg-amber-100 text-amber-600'  },
-  { bg:'bg-pink-50',   border:'border-pink-100',   text:'text-pink-700',   avatar:'bg-pink-100 text-pink-600'   },
-  { bg:'bg-teal-50',   border:'border-teal-100',   text:'text-teal-700',   avatar:'bg-teal-100 text-teal-600'   },
+  {bg:'bg-blue-50',   border:'border-blue-100',   text:'text-blue-700',   avatar:'bg-blue-100 text-blue-600'},
+  {bg:'bg-violet-50', border:'border-violet-100', text:'text-violet-700', avatar:'bg-violet-100 text-violet-600'},
+  {bg:'bg-emerald-50',border:'border-emerald-100',text:'text-emerald-700',avatar:'bg-emerald-100 text-emerald-600'},
+  {bg:'bg-amber-50',  border:'border-amber-100',  text:'text-amber-700',  avatar:'bg-amber-100 text-amber-600'},
+  {bg:'bg-pink-50',   border:'border-pink-100',   text:'text-pink-700',   avatar:'bg-pink-100 text-pink-600'},
+  {bg:'bg-teal-50',   border:'border-teal-100',   text:'text-teal-700',   avatar:'bg-teal-100 text-teal-600'},
 ];
 
 const configs = {
   ajil: {
     title:'Ажил хайх', addLabel:'Зар нэмэх', addTitle:'Өөрийн мэдээлэл оруулах',
-    collection:'jobs',
+    collection:'jobs', cvUpload:true,
     fields:[
       {key:'ovog',      label:'Овог',              required:true},
       {key:'ner',       label:'Нэр',               required:true},
@@ -34,9 +37,8 @@ const configs = {
       {key:'cv_text',   label:'CV / Намтар',       required:false, textarea:true},
       {key:'nemelt',    label:'Нэмэлт',            required:false, textarea:true},
     ],
-    cvUpload: true,
-    cardTitle:(d) => d.ner ? `${d.ovog||''} ${d.ner}`.trim() : 'Ажил хайгч',
-    cardSub:(d) => d.chiglel, salaryKey:'tsalin',
+    cardTitle:(d)=>d.ner?`${d.ovog||''} ${d.ner}`.trim():'Ажил хайгч',
+    cardSub:(d)=>d.chiglel, salaryKey:'tsalin',
   },
   ajiltan: {
     title:'Ажилтан хайх', addLabel:'Зар нэмэх', addTitle:'Ажлын зар оруулах',
@@ -52,8 +54,8 @@ const configs = {
       {key:'ajilchinaas_huseh', label:'Ажилтнаас хүсэх',  required:false, textarea:true},
       {key:'nemelt',            label:'Нэмэлт',            required:false, textarea:true},
     ],
-    cardTitle:(d) => d.alban_tushaal || 'Ажлын зар',
-    cardSub:(d) => d.baiguulgiin_ner, salaryKey:'tsalin',
+    cardTitle:(d)=>d.alban_tushaal||'Ажлын зар',
+    cardSub:(d)=>d.baiguulgiin_ner, salaryKey:'tsalin',
   },
   dadlaga: {
     title:'Дадлага', addLabel:'Зар нэмэх', addTitle:'Дадлагын зар оруулах',
@@ -69,8 +71,8 @@ const configs = {
       {key:'ajilchinaas_huseh', label:'Шаардлага',        required:false, textarea:true},
       {key:'nemelt',            label:'Нэмэлт',           required:false, textarea:true},
     ],
-    cardTitle:(d) => d.alban_tushaal || 'Дадлага',
-    cardSub:(d) => d.baiguulgiin_ner, salaryKey:'tsalin',
+    cardTitle:(d)=>d.alban_tushaal||'Дадлага',
+    cardSub:(d)=>d.baiguulgiin_ner, salaryKey:'tsalin',
   },
   surgalt: {
     title:'Сургалт', addLabel:'Зар нэмэх', addTitle:'Сургалтын зар оруулах',
@@ -83,9 +85,15 @@ const configs = {
       {key:'hayg',          label:'Хаяг / Линк',   required:false, isAddress:true},
       {key:'nemelt',        label:'Дэлгэрэнгүй',   required:false, textarea:true},
     ],
-    cardTitle:(d) => d.ner || 'Сургалт',
-    cardSub:(d) => d.baiguulga_ner, salaryKey:'une_hansh',
+    cardTitle:(d)=>d.ner||'Сургалт',
+    cardSub:(d)=>d.baiguulga_ner, salaryKey:'une_hansh',
   },
+};
+
+// Compute average rating
+const avgRating = (ratings=[]) => {
+  if (!ratings.length) return 0;
+  return ratings.reduce((s,r)=>s+r.stars, 0) / ratings.length;
 };
 
 export default function JobList({ type }) {
@@ -101,33 +109,66 @@ export default function JobList({ type }) {
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({});
   const [cvFile, setCvFile] = useState(null);
+  const [cvParsing, setCvParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [myRating, setMyRating] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   useEffect(() => {
     setItems([]); setLoading(true);
     const q = query(collection(db, cfg.collection), orderBy('createdAt','desc'));
     return onSnapshot(q, snap => {
-      setItems(snap.docs.map(d => ({id:d.id, ...d.data()})));
+      setItems(snap.docs.map(d=>({id:d.id,...d.data()})));
       setLoading(false);
     });
   }, [type]);
+
+  // When selected changes, load my existing rating
+  useEffect(() => {
+    if (!selected || !user) return;
+    const existing = (selected.ratings||[]).find(r=>r.uid===user.uid);
+    setMyRating(existing?.stars || 0);
+  }, [selected, user]);
+
+  // CV file → extract text via mammoth
+  const handleCvFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCvFile(file);
+    const isPdf = file.name.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      // PDF: just store filename, no text extraction
+      return;
+    }
+    setCvParsing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const text = result.value.trim();
+      if (text) setForm(p => ({ ...p, cv_text: text }));
+    } catch(err) {
+      console.error('mammoth error', err);
+    }
+    setCvParsing(false);
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      let cvUrl = null;
+      let cv_url = null, cv_name = null;
       if (cvFile) {
         const storageRef = ref(storage, `cvs/${user.uid}/${Date.now()}_${cvFile.name}`);
         await uploadBytes(storageRef, cvFile);
-        cvUrl = await getDownloadURL(storageRef);
+        cv_url = await getDownloadURL(storageRef);
+        cv_name = cvFile.name;
       }
       await addDoc(collection(db, cfg.collection), {
         ...form,
-        ...(cvUrl ? { cv_url: cvUrl, cv_name: cvFile.name } : {}),
-        uid: user.uid,
-        email: user.email,
+        ...(cv_url ? { cv_url, cv_name } : {}),
+        ratings: [],
+        uid: user.uid, email: user.email,
         createdAt: serverTimestamp(),
       });
       setForm({}); setCvFile(null); setShowForm(false);
@@ -143,18 +184,35 @@ export default function JobList({ type }) {
     setDeleting(false);
   };
 
+  const submitRating = async (stars) => {
+    if (!selected || !user || ratingSubmitting) return;
+    setMyRating(stars);
+    setRatingSubmitting(true);
+    const itemRef = doc(db, cfg.collection, selected.id);
+    // Remove old rating then add new
+    const oldRating = (selected.ratings||[]).find(r=>r.uid===user.uid);
+    if (oldRating) await updateDoc(itemRef, { ratings: arrayRemove(oldRating) });
+    const newRating = { uid: user.uid, stars, at: Date.now() };
+    await updateDoc(itemRef, { ratings: arrayUnion(newRating) });
+    setSelected(s => {
+      const filtered = (s.ratings||[]).filter(r=>r.uid!==user.uid);
+      return { ...s, ratings: [...filtered, newRating] };
+    });
+    setRatingSubmitting(false);
+  };
+
   const openDetail = async (item) => {
     setSelected(item); setSelectedOwner(null);
     if (item.uid) {
       const snap = await getDoc(doc(db, 'users', item.uid));
-      if (snap.exists()) setSelectedOwner({id: item.uid, ...snap.data()});
+      if (snap.exists()) setSelectedOwner({id:item.uid,...snap.data()});
     }
   };
 
   const filtered = items.filter(i => {
-    const mc = filterChiglel === 'Бүгд' || i.chiglel === filterChiglel;
+    const mc = filterChiglel==='Бүгд' || i.chiglel===filterChiglel;
     const s  = search.toLowerCase();
-    return mc && (!s || Object.values(i).some(v => String(v).toLowerCase().includes(s)));
+    return mc && (!s || Object.values(i).some(v=>String(v).toLowerCase().includes(s)));
   });
 
   return (
@@ -162,7 +220,7 @@ export default function JobList({ type }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Haga</p>
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
           <h1 className="text-2xl font-display font-bold text-gray-800">{cfg.title}</h1>
         </div>
         <button onClick={() => setShowForm(true)}
@@ -180,12 +238,12 @@ export default function JobList({ type }) {
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="Хайх..." className="input-base pl-9"/>
         </div>
-        {cfg.fields.some(f => f.key === 'chiglel') && (
-          <select value={filterChiglel} onChange={e => setFilterChiglel(e.target.value)} className="input-base w-auto">
-            {chiglels.map(c => <option key={c} value={c}>{c}</option>)}
+        {cfg.fields.some(f=>f.key==='chiglel') && (
+          <select value={filterChiglel} onChange={e=>setFilterChiglel(e.target.value)} className="input-base w-auto">
+            {chiglels.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         )}
       </div>
@@ -197,15 +255,16 @@ export default function JobList({ type }) {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card rounded-2xl p-12 text-center text-gray-300 animate-fade-up-delay">
-          <div className="text-4xl mb-3">📭</div>
-          <p className="text-sm">Зар байхгүй байна</p>
+          <div className="text-4xl mb-3">📭</div><p className="text-sm">Зар байхгүй байна</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up-delay">
           {filtered.map((item, idx) => {
             const c = COLORS[idx % COLORS.length];
+            const avg = avgRating(item.ratings);
+            const cnt = (item.ratings||[]).length;
             return (
-              <button key={item.id} onClick={() => openDetail(item)}
+              <button key={item.id} onClick={()=>openDetail(item)}
                 className={`card card-hover rounded-2xl p-5 text-left border ${c.border} ${c.bg}`}>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold ${c.avatar} flex-shrink-0`}>
@@ -219,8 +278,11 @@ export default function JobList({ type }) {
                 </div>
                 <div className={`font-display font-bold text-base mb-1 ${c.text}`}>{cfg.cardTitle(item)}</div>
                 {cfg.cardSub(item) && <div className="text-gray-500 text-sm">{cfg.cardSub(item)}</div>}
+                <div className="mt-2">
+                  <StarDisplay rating={avg} count={cnt}/>
+                </div>
                 {item.chiglel && (
-                  <span className="inline-block mt-3 text-xs font-medium text-gray-500 bg-white border border-surf-200 px-2.5 py-1 rounded-full">
+                  <span className="inline-block mt-2 text-xs font-medium text-gray-500 bg-white border border-surf-200 px-2.5 py-1 rounded-full">
                     {item.chiglel}
                   </span>
                 )}
@@ -230,14 +292,8 @@ export default function JobList({ type }) {
                   </svg>
                   <span className="truncate">{item.hayg}</span>
                 </div>}
-                {item.uid === user?.uid && (
-                  <div className="mt-3">
-                    <span className="text-xs text-brand-500 font-medium">● Миний зар</span>
-                  </div>
-                )}
-                <div className="text-gray-300 text-xs mt-2">
-                  {item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')||''}
-                </div>
+                {item.uid===user?.uid && <div className="mt-2"><span className="text-xs text-brand-500 font-medium">● Миний зар</span></div>}
+                <div className="text-gray-300 text-xs mt-2">{item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')||''}</div>
               </button>
             );
           })}
@@ -246,15 +302,14 @@ export default function JobList({ type }) {
 
       {/* Detail modal */}
       {selected && (
-        <Modal onClose={() => {setSelected(null); setSelectedOwner(null);}}>
-          <div className="flex items-start justify-between mb-5">
+        <Modal onClose={()=>{setSelected(null);setSelectedOwner(null);}}>
+          <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-xl font-display font-bold text-gray-800">{cfg.cardTitle(selected)}</h2>
               {cfg.cardSub(selected) && <p className="text-gray-400 text-sm mt-0.5">{cfg.cardSub(selected)}</p>}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              {/* Delete — only own posts */}
-              {selected.uid === user?.uid && (
+              {selected.uid===user?.uid && (
                 <button onClick={handleDelete} disabled={deleting}
                   className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl transition-all disabled:opacity-50">
                   {deleting
@@ -265,8 +320,7 @@ export default function JobList({ type }) {
                   Устгах
                 </button>
               )}
-              <button onClick={() => {setSelected(null); setSelectedOwner(null);}}
-                className="text-gray-300 hover:text-gray-500 transition p-1">
+              <button onClick={()=>{setSelected(null);setSelectedOwner(null);}} className="text-gray-300 hover:text-gray-500 p-1 transition">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -274,8 +328,24 @@ export default function JobList({ type }) {
             </div>
           </div>
 
-          <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-            {cfg.fields.map(f => {
+          {/* Rating */}
+          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Үнэлгээ</div>
+                <StarDisplay rating={avgRating(selected.ratings)} count={(selected.ratings||[]).length} size="lg"/>
+              </div>
+              {selected.uid !== user?.uid && (
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Та үнэлэх</div>
+                  <StarPicker value={myRating} onChange={submitRating}/>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3 max-h-[38vh] overflow-y-auto pr-1">
+            {cfg.fields.map(f=>{
               const val = selected[f.key];
               if (!val) return null;
               return (
@@ -285,68 +355,31 @@ export default function JobList({ type }) {
                 </div>
               );
             })}
-            {/* CV file download */}
-            {selected.cv_url && (
-              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-0.5">CV файл</div>
-                  <div className="text-gray-700 text-sm truncate">{selected.cv_name || 'cv.docx'}</div>
-                </div>
-                <a href={selected.cv_url} target="_blank" rel="noopener noreferrer" download
-                  className="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                  </svg>
-                  Татах
-                </a>
-              </div>
-            )}
           </div>
 
           {/* Poster profile */}
           {selectedOwner && (
-            <div className="mt-5 pt-4 border-t border-surf-100">
+            <div className="mt-4 pt-4 border-t border-surf-100">
               <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Зар оруулагч</p>
               <div className="bg-surf-50 rounded-xl p-4 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-brand-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">
                   {selectedOwner.photoURL
                     ? <img src={selectedOwner.photoURL} alt="" className="w-full h-full object-cover"/>
                     : <span className="text-sm font-bold text-brand-600">
-                        {(selectedOwner.ner || selected.email || '?')[0].toUpperCase()}
+                        {(selectedOwner.ner||selected.email||'?')[0].toUpperCase()}
                       </span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-gray-800 font-semibold text-sm">
-                    {selectedOwner.ner ? `${selectedOwner.ovog||''} ${selectedOwner.ner}`.trim() : selected.email}
+                    {selectedOwner.ner?`${selectedOwner.ovog||''} ${selectedOwner.ner}`.trim():selected.email}
                   </div>
                   {selectedOwner.email && <div className="text-gray-400 text-xs mt-0.5">{selectedOwner.email}</div>}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedOwner.chiglel && (
-                      <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{selectedOwner.chiglel}</span>
-                    )}
-                    {selectedOwner.turshlaga && (
-                      <span className="text-xs bg-surf-100 border border-surf-200 text-gray-500 px-2 py-0.5 rounded-full">{selectedOwner.turshlaga} туршлага</span>
-                    )}
-                    {selectedOwner.tsalin && (
-                      <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">{selectedOwner.tsalin}₮</span>
-                    )}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {selectedOwner.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{selectedOwner.chiglel}</span>}
+                    {selectedOwner.turshlaga && <span className="text-xs bg-surf-100 border border-surf-200 text-gray-500 px-2 py-0.5 rounded-full">{selectedOwner.turshlaga}</span>}
+                    {selectedOwner.tsalin && <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">{selectedOwner.tsalin}₮</span>}
                   </div>
-                  {selectedOwner.chadvar && (
-                    <div className="mt-2 text-xs text-gray-500">{selectedOwner.chadvar}</div>
-                  )}
-                  {selectedOwner.hayg && (
-                    <div className="mt-1 text-xs text-gray-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                      </svg>
-                      {selectedOwner.hayg}
-                    </div>
-                  )}
+                  {selectedOwner.chadvar && <div className="mt-1.5 text-xs text-gray-500">{selectedOwner.chadvar}</div>}
                 </div>
               </div>
             </div>
@@ -356,30 +389,28 @@ export default function JobList({ type }) {
 
       {/* Add form modal */}
       {showForm && (
-        <Modal onClose={() => {setShowForm(false); setForm({}); setCvFile(null);}}>
+        <Modal onClose={()=>{setShowForm(false);setForm({});setCvFile(null);}}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-display font-bold text-gray-800">{cfg.addTitle}</h2>
-            <button onClick={() => {setShowForm(false); setForm({}); setCvFile(null);}}
-              className="text-gray-300 hover:text-gray-500 transition p-1">
+            <button onClick={()=>{setShowForm(false);setForm({});setCvFile(null);}} className="text-gray-300 hover:text-gray-500 p-1 transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
           <form onSubmit={handleAdd} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-            {cfg.fields.map(f => (
+            {cfg.fields.map(f=>(
               <div key={f.key}>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  {f.label}{f.required && <span className="text-red-400 ml-1">*</span>}
+                  {f.label}{f.required&&<span className="text-red-400 ml-1">*</span>}
                 </label>
                 {f.isAddress ? (
-                  <AddressInput value={form[f.key]||''} onChange={v => setForm(p=>({...p,[f.key]:v}))} />
+                  <AddressInput value={form[f.key]||''} onChange={v=>setForm(p=>({...p,[f.key]:v}))}/>
                 ) : f.textarea ? (
                   <textarea value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                     required={f.required} rows={3} className="input-base resize-none"/>
                 ) : f.key==='chiglel' ? (
-                  <select value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
-                    className="input-base">
+                  <select value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))} className="input-base">
                     <option value="">Сонгоно уу</option>
                     {chiglels.slice(1).map(c=><option key={c} value={c}>{c}</option>)}
                   </select>
@@ -390,28 +421,39 @@ export default function JobList({ type }) {
               </div>
             ))}
 
-            {/* CV file upload */}
+            {/* CV upload — auto-extracts text */}
             {cfg.cvUpload && (
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  CV файл (.docx / .pdf)
+                  CV файл (.docx — текст автоматаар орно)
                 </label>
                 <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition-all ${
                   cvFile ? 'border-brand-300 bg-brand-50' : 'border-surf-200 hover:border-brand-300 bg-surf-50'
                 }`}>
-                  <svg className="w-5 h-5 text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
+                  {cvParsing ? (
+                    <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin flex-shrink-0"/>
+                  ) : (
+                    <svg className="w-5 h-5 text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                  )}
                   <span className="text-sm text-gray-500 truncate">
-                    {cvFile ? cvFile.name : 'Файл сонгох...'}
+                    {cvParsing ? 'Уншиж байна...' : cvFile ? cvFile.name : 'Файл сонгох...'}
                   </span>
-                  <input type="file" accept=".docx,.pdf,.doc" className="hidden"
-                    onChange={e => setCvFile(e.target.files?.[0]||null)}/>
+                  <input type="file" accept=".docx,.doc" className="hidden" onChange={handleCvFile}/>
                 </label>
+                {cvFile && form.cv_text && (
+                  <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Текст автоматаар CV талбарт орлоо
+                  </p>
+                )}
               </div>
             )}
 
-            <button type="submit" disabled={saving}
+            <button type="submit" disabled={saving||cvParsing}
               className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-btn flex items-center justify-center gap-2">
               {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Хадгалах'}
             </button>
