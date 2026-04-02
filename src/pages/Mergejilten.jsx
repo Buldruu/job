@@ -18,13 +18,11 @@ export default function Mergejilten() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'users'),
-      where('zovshoorol', '==', true),
-      orderBy('createdAt', 'desc')
-    );
+    // Бүх хэрэглэгчийг татаж, client дээр шүүнэ (index шаардахгүй)
+    const q = query(collection(db, 'users'));
     return onSnapshot(q, snap => {
-      setWorkers(snap.docs.map(d=>({id:d.id,...d.data()})));
+      const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+      setWorkers(all.filter(u => u.zovshoorol === true));
       setLoading(false);
     });
   }, []);

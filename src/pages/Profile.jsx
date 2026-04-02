@@ -75,20 +75,25 @@ export default function Profile() {
     return ()=>{u1();u2();};
   }, [user]);
 
-  // Load my posts from all collections
+  // Load my posts - simple query without orderBy to avoid index requirement
   useEffect(() => {
     if (!user) return;
     const colls = ['jobs','workers','internships','courses'];
     const allPosts = {};
     const unsubs = [];
+    let loaded = 0;
     colls.forEach(col => {
-      const q = query(collection(db,col), where('uid','==',user.uid), orderBy('createdAt','desc'));
+      // where only - no orderBy to avoid needing composite index
+      const q = query(collection(db,col), where('uid','==',user.uid));
       const unsub = onSnapshot(q, snap => {
         allPosts[col] = snap.docs.map(d=>({id:d.id,_col:col,...d.data()}));
-        const merged = Object.values(allPosts).flat()
-          .sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-        setMyPosts(merged);
-        setPostsLoading(false);
+        loaded++;
+        if (loaded >= colls.length) {
+          const merged = Object.values(allPosts).flat()
+            .sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+          setMyPosts(merged);
+          setPostsLoading(false);
+        }
       });
       unsubs.push(unsub);
     });
