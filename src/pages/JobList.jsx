@@ -98,7 +98,7 @@ const avgRating = (ratings=[]) => {
 
 export default function JobList({ type }) {
   const cfg = configs[type];
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +112,7 @@ export default function JobList({ type }) {
   const [cvParsing, setCvParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [featuring, setFeaturing] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
@@ -157,23 +158,62 @@ export default function JobList({ type }) {
     e.preventDefault();
     setSaving(true);
     try {
-      let cv_url = null, cv_name = null;
-      if (cvFile) {
-        const storageRef = ref(storage, `cvs/${user.uid}/${Date.now()}_${cvFile.name}`);
-        await uploadBytes(storageRef, cvFile);
-        cv_url = await getDownloadURL(storageRef);
-        cv_name = cvFile.name;
-      }
-      await addDoc(collection(db, cfg.collection), {
+      // 1. Firestore-d shuud hagalna
+      const docRef = await addDoc(collection(db, cfg.collection), {
         ...form,
-        ...(cv_url ? { cv_url, cv_name } : {}),
         ratings: [],
-        uid: user.uid, email: user.email,
+        uid: user.uid,
+        email: user.email,
         createdAt: serverTimestamp(),
       });
-      setForm({}); setCvFile(null); setShowForm(false);
-    } catch(err) { console.error(err); }
-    setSaving(false);
+      // 2. Modal haaj, form tsevrlelne - heregleged huleekhgui
+      setForm({}); setCvFile(null); setShowForm(false); setSaving(false);
+      // 3. CV bail ard ni upload hiine (background)
+      if (cvFile) {
+        const { updateDoc } = await import('firebase/firestore');
+        const storageRef = ref(storage, `cvs/${user.uid}/${Date.now()}_${cvFile.name}`);
+        await uploadBytes(storageRef, cvFile);
+        const cv_url = await getDownloadURL(storageRef);
+        await updateDoc(docRef, { cv_url, cv_name: cvFile.name });
+      }
+    } catch(err) {
+      console.error(err);
+      setSaving(false);
+    }
+  };
+
+  const handleFeature = async () => {
+    if (!selected || featuring) return;
+    const FEATURE_COST = 5000;
+    if ((profile?.balance || 0) < FEATURE_COST) {
+      alert('Үлдэгдэл хүрэлцэхгүй байна. 5,000₮ шаардлагатай.');
+      return;
+    }
+    if (!window.confirm('Зарыг онцлоход 5,000₮ зарцуулагдана. Үргэлжлүүлэх үү?')) return;
+    setFeaturing(true);
+    try {
+      const { runTransaction, doc: firestoreDoc, increment, addDoc: firestoreAdd, collection: firestoreCol, serverTimestamp: sts } = await import('firebase/firestore');
+      await runTransaction(db, async (tx) => {
+        const userRef = firestoreDoc(db, 'users', user.uid);
+        const snap = await tx.get(userRef);
+        if ((snap.data().balance || 0) < FEATURE_COST) throw new Error('Үлдэгдэл хүрэлцэхгүй');
+        tx.update(userRef, { balance: increment(-FEATURE_COST) });
+        tx.update(firestoreDoc(db, cfg.collection, selected.id), {
+          featured: true,
+          featuredAt: sts(),
+        });
+      });
+      await firestoreAdd(firestoreCol(db, 'transactions'), {
+        uid: user.uid, type: 'zarlaga', amount: FEATURE_COST,
+        note: 'Онцлох зар', createdAt: sts(),
+      });
+      await refreshProfile();
+      setSelected(s => ({ ...s, featured: true }));
+      alert('Зар онцлогдлоо! ⭐');
+    } catch(err) {
+      alert(err.message || 'Алдаа гарлаа');
+    }
+    setFeaturing(false);
   };
 
   const handleDelete = async () => {
@@ -292,7 +332,8 @@ export default function JobList({ type }) {
                   </svg>
                   <span className="truncate">{item.hayg}</span>
                 </div>}
-                {item.uid===user?.uid && <div className="mt-2"><span className="text-xs text-brand-500 font-medium">● Миний зар</span></div>}
+                {item.featured && <div className="mt-1"><span className="text-xs text-amber-600 font-medium">⭐ Онцлох</span></div>}
+                {item.uid===user?.uid && <div className="mt-1"><span className="text-xs text-brand-500 font-medium">● Миний зар</span></div>}
                 <div className="text-gray-300 text-xs mt-2">{item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')||''}</div>
               </button>
             );
@@ -309,6 +350,15 @@ export default function JobList({ type }) {
               {cfg.cardSub(selected) && <p className="text-gray-400 text-sm mt-0.5">{cfg.cardSub(selected)}</p>}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              {selected.uid===user?.uid && !selected.featured && (
+                <button onClick={handleFeature} disabled={featuring}
+                  className="flex items-center gap-1.5 text-xs text-amber-500 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl transition-all disabled:opacity-50">
+                  {featuring
+                    ? <div className="w-3 h-3 border border-amber-300 border-t-transparent rounded-full animate-spin"/>
+                    : '⭐'}
+                  Онцлох (5,000₮)
+                </button>
+              )}
               {selected.uid===user?.uid && (
                 <button onClick={handleDelete} disabled={deleting}
                   className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl transition-all disabled:opacity-50">

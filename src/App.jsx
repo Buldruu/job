@@ -12,33 +12,29 @@ import Profile from './pages/Profile';
 import JobList from './pages/JobList';
 import EscrowDetail from './pages/EscrowDetail';
 import Admin from './pages/Admin';
-
-function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <Spinner />;
-  return user ? children : <Navigate to="/login" replace />;
-}
+import Mergejilten from './pages/Mergejilten';
 
 function Spinner() {
   return (
     <div className="min-h-screen bg-surf-50 flex items-center justify-center">
-      <div className="w-9 h-9 rounded-full border-2 border-brand-400 border-t-transparent animate-spin" />
+      <div className="w-9 h-9 rounded-full border-2 border-brand-400 border-t-transparent animate-spin"/>
     </div>
   );
 }
 
-// Presence: update lastSeen every 2 minutes while logged in
+function PrivateRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Spinner/>;
+  return user ? children : <Navigate to="/login" replace/>;
+}
+
 function PresenceTracker() {
   const { user } = useAuth();
   useEffect(() => {
     if (!user) return;
-    const update = () =>
-      setDoc(doc(db, 'presence', user.uid), {
-        uid: user.uid,
-        lastSeen: serverTimestamp(),
-      }, { merge: true });
+    const update = () => setDoc(doc(db,'presence',user.uid), { uid:user.uid, lastSeen:serverTimestamp() }, {merge:true});
     update();
-    const id = setInterval(update, 2 * 60 * 1000);
+    const id = setInterval(update, 2*60*1000);
     return () => clearInterval(id);
   }, [user]);
   return null;
@@ -46,26 +42,27 @@ function PresenceTracker() {
 
 export default function App() {
   const { user, loading } = useAuth();
-  if (loading) return <Spinner />;
+  if (loading) return <Spinner/>;
 
   return (
     <>
-      <PresenceTracker />
+      <PresenceTracker/>
       <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="ajil"    element={<JobList type="ajil" />} />
-          <Route path="ajiltan" element={<JobList type="ajiltan" />} />
-          <Route path="dadlaga" element={<JobList type="dadlaga" />} />
-          <Route path="surgalt" element={<JobList type="surgalt" />} />
-          <Route path="sanhuu"  element={<Finance />} />
-          <Route path="sanhuu/shiljuuleg" element={<Transfer />} />
-          <Route path="sanhuu/escrow/:id" element={<EscrowDetail />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="admin"   element={<Admin />} />
+        <Route path="/login" element={user ? <Navigate to="/" replace/> : <Login/>}/>
+        <Route path="/" element={<PrivateRoute><Layout/></PrivateRoute>}>
+          <Route index element={<Dashboard/>}/>
+          <Route path="ajil"           element={<JobList type="ajil"/>}/>
+          <Route path="ajiltan"        element={<JobList type="ajiltan"/>}/>
+          <Route path="dadlaga"        element={<JobList type="dadlaga"/>}/>
+          <Route path="surgalt"        element={<JobList type="surgalt"/>}/>
+          <Route path="mergejilten"    element={<Mergejilten/>}/>
+          <Route path="sanhuu"         element={<Finance/>}/>
+          <Route path="sanhuu/shiljuuleg" element={<Transfer/>}/>
+          <Route path="sanhuu/escrow/:id" element={<EscrowDetail/>}/>
+          <Route path="profile"        element={<Profile/>}/>
+          <Route path="admin"          element={<Admin/>}/>
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace/>}/>
       </Routes>
     </>
   );

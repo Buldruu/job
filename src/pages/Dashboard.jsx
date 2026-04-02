@@ -1,109 +1,118 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { StarDisplay } from '../components/RatingStars';
 
 const quickLinks = [
-  {
-    to: '/ajil',
-    label: 'Ажил хайх',
-    desc: 'Нийтлэгдсэн ажлын зарууд',
-    icon: '💼',
-    bg: 'bg-blue-50',
-    iconBg: 'bg-blue-100',
-    accent: 'text-blue-600',
-    border: 'border-blue-100',
-  },
-  {
-    to: '/ajiltan',
-    label: 'Ажилтан хайх',
-    desc: 'Мэргэжилтэн олох',
-    icon: '👥',
-    bg: 'bg-violet-50',
-    iconBg: 'bg-violet-100',
-    accent: 'text-violet-600',
-    border: 'border-violet-100',
-  },
-  {
-    to: '/dadlaga',
-    label: 'Дадлага',
-    desc: 'Туршлага олох боломж',
-    icon: '📚',
-    bg: 'bg-emerald-50',
-    iconBg: 'bg-emerald-100',
-    accent: 'text-emerald-600',
-    border: 'border-emerald-100',
-  },
-  {
-    to: '/surgalt',
-    label: 'Сургалт',
-    desc: 'Мэргэжил дээшлүүлэх',
-    icon: '🎓',
-    bg: 'bg-amber-50',
-    iconBg: 'bg-amber-100',
-    accent: 'text-amber-600',
-    border: 'border-amber-100',
-  },
+  { to:'/ajil',    label:'Ажил хайх',    desc:'Нийтлэгдсэн ажлын зарууд', icon:'💼', bg:'bg-blue-50',   border:'border-blue-100',   text:'text-blue-700'   },
+  { to:'/ajiltan', label:'Ажилтан хайх', desc:'Мэргэжилтэн олох',          icon:'👥', bg:'bg-violet-50', border:'border-violet-100', text:'text-violet-700' },
+  { to:'/dadlaga', label:'Дадлага',       desc:'Туршлага олох боломж',      icon:'📚', bg:'bg-emerald-50',border:'border-emerald-100',text:'text-emerald-700'},
+  { to:'/surgalt', label:'Сургалт',       desc:'Мэргэжил дээшлүүлэх',      icon:'🎓', bg:'bg-amber-50',  border:'border-amber-100',  text:'text-amber-700'  },
+  { to:'/mergejilten', label:'Мэргэшсэн ажилтан', desc:'Баталгаажсан мэргэжилтнүүд', icon:'🏅', bg:'bg-teal-50', border:'border-teal-100', text:'text-teal-700' },
 ];
+
+const avgRating = (ratings=[]) => {
+  if (!ratings.length) return 0;
+  return ratings.reduce((s,r)=>s+r.stars,0)/ratings.length;
+};
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
+  const [featured, setFeatured] = useState([]);
+
   const displayName = profile?.ner
-    ? `${profile.ovog || ''} ${profile.ner}`.trim()
+    ? `${profile.ovog||''} ${profile.ner}`.trim()
     : user?.email?.split('@')[0];
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Өглөөний мэнд' : hour < 17 ? 'Өдрийн мэнд' : 'Оройн мэнд';
+
+  // Load featured posts from all collections
+  useEffect(() => {
+    const colls = ['jobs','workers','internships','courses'];
+    const unsubs = [];
+    const allFeatured = {};
+    colls.forEach(col => {
+      const q = query(
+        collection(db, col),
+        where('featured', '==', true),
+        orderBy('featuredAt', 'desc'),
+        limit(6)
+      );
+      const unsub = onSnapshot(q, snap => {
+        allFeatured[col] = snap.docs.map(d=>({id:d.id, _col:col, ...d.data()}));
+        const merged = Object.values(allFeatured).flat()
+          .sort((a,b)=>(b.featuredAt?.seconds||0)-(a.featuredAt?.seconds||0))
+          .slice(0,6);
+        setFeatured(merged);
+      });
+      unsubs.push(unsub);
+    });
+    return () => unsubs.forEach(u=>u());
+  }, []);
+
+  const getTitle = (item) => {
+    if (item._col==='jobs') return item.ner?`${item.ovog||''} ${item.ner}`.trim():'Ажил хайгч';
+    if (item._col==='workers') return item.alban_tushaal||'Ажлын зар';
+    if (item._col==='internships') return item.alban_tushaal||'Дадлага';
+    return item.ner||'Сургалт';
+  };
+  const getSub = (item) => item.baiguulgiin_ner||item.baiguulga_ner||item.chiglel||'';
 
   return (
     <div className="p-8 max-w-3xl">
       {/* Header */}
       <div className="mb-10 animate-fade-up">
         <p className="text-gray-400 text-sm mb-1">{greeting},</p>
-        <h1 className="text-3xl font-display font-bold text-gray-800">
-          {displayName} 👋
-        </h1>
+        <h1 className="text-3xl font-display font-bold text-gray-800">{displayName} 👋</h1>
       </div>
 
-      {/* Cards */}
-      <div className="animate-fade-up-delay">
+      {/* Menu cards */}
+      <div className="animate-fade-up-delay mb-10">
         <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Цэс</p>
         <div className="grid grid-cols-2 gap-4">
           {quickLinks.map(link => (
-            <button
-              key={link.to}
-              onClick={() => navigate(link.to)}
-              className={`card card-hover rounded-2xl p-6 text-left border ${link.border} ${link.bg}`}
-            >
-              <div className={`w-11 h-11 ${link.iconBg} rounded-xl flex items-center justify-center text-2xl mb-4`}>
+            <button key={link.to} onClick={() => navigate(link.to)}
+              className={`card card-hover rounded-2xl p-6 text-left border ${link.border} ${link.bg}`}>
+              <div className={`w-11 h-11 bg-white rounded-xl flex items-center justify-center text-2xl mb-4 border ${link.border}`}>
                 {link.icon}
               </div>
-              <div className={`font-display font-bold text-lg mb-1 ${link.accent}`}>{link.label}</div>
+              <div className={`font-display font-bold text-lg mb-1 ${link.text}`}>{link.label}</div>
               <div className="text-gray-400 text-sm">{link.desc}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Profile prompt */}
-      {!profile?.ner && (
-        <div className="mt-8 animate-fade-up-delay2">
-          <div className="card rounded-2xl p-5 border border-brand-100 bg-brand-50 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-gray-700 font-semibold text-sm">Профайлаа бөглөнө үү</p>
-              <p className="text-gray-400 text-xs mt-0.5">Мэдээллээ оруулснаар ажил олоход хялбар болно</p>
-            </div>
-            <button
-              onClick={() => navigate('/profile')}
-              className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-btn"
-            >
-              Бөглөх
-            </button>
+      {/* Featured posts */}
+      {featured.length > 0 && (
+        <div className="animate-fade-up-delay2">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">⭐</span>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Онцлох зарууд</p>
+          </div>
+          <div className="space-y-3">
+            {featured.map(item => (
+              <div key={`${item._col}-${item.id}`}
+                className="card rounded-xl px-5 py-4 border border-amber-100 bg-amber-50 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-lg flex-shrink-0">
+                  ⭐
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-bold text-amber-800 text-sm">{getTitle(item)}</div>
+                  {getSub(item) && <div className="text-amber-600 text-xs mt-0.5">{getSub(item)}</div>}
+                  <StarDisplay rating={avgRating(item.ratings)} count={(item.ratings||[]).length}/>
+                </div>
+                {item.tsalin && (
+                  <span className="text-xs text-emerald-600 font-bold bg-white border border-emerald-100 px-2 py-1 rounded-lg flex-shrink-0">
+                    {item.tsalin}₮
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
