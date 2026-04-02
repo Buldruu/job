@@ -20,12 +20,12 @@ export function StarDisplay({ rating = 0, count = 0, size = 'sm' }) {
 export function StarPicker({ value, onChange }) {
   const [hover, setHover] = useState(0);
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
       {[1,2,3,4,5].map(i => (
         <button key={i} type="button"
           onMouseEnter={() => setHover(i)}
           onMouseLeave={() => setHover(0)}
-          onClick={() => onChange(i)}
+          onClick={e => { e.stopPropagation(); onChange(i); }}
           className="focus:outline-none transition-transform hover:scale-110">
           <svg className={`w-7 h-7 transition-colors ${i <= (hover || value) ? 'text-amber-400' : 'text-gray-200'}`}
             fill="currentColor" viewBox="0 0 20 20">
