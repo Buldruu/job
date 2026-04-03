@@ -23,11 +23,13 @@ export default function Profile() {
   const [form, setForm] = useState({
     ovog:'', ner:'', chadvar:'', turshlaga:'',
     hayg:'', chiglel:'', tsalin:'', cv:'', nemelt:'',
-    zэрэг:'', surgaltin_gazar:'',
+    zэрэг:'', surgaltin_gazar:'', cert_url:'',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [certUploading, setCertUploading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
 
   // Finance
   const [txns, setTxns] = useState([]);
@@ -51,6 +53,7 @@ export default function Profile() {
       nemelt:         profile.nemelt         || '',
       zэрэг:          profile.zэрэг          || '',
       surgaltin_gazar:profile.surgaltin_gazar|| '',
+      cert_url:       profile.cert_url        || '',
     });
   }, [profile]);
 
@@ -122,14 +125,44 @@ export default function Profile() {
     e.target.value='';
   };
 
+  const handleCertUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCertUploading(true);
+    try {
+      const storageRef = ref(storage, `certs/${user.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      set('cert_url', url);
+    } catch(err) { console.error(err); }
+    setCertUploading(false);
+    e.target.value = '';
+  };
+
+  const handleVerifyRequest = async () => {
+    if (!form.zэрэг || !form.cert_url || !form.surgaltin_gazar) return;
+    setVerifyLoading(true);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        zэрэг: form.zэрэг,
+        surgaltin_gazar: form.surgaltin_gazar,
+        cert_url: form.cert_url,
+        zovshoorol: 'pending',
+      });
+      await refreshProfile();
+    } catch(err) { console.error(err); }
+    setVerifyLoading(false);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true); setSaved(false);
     try {
-      const hasDegree = !!form.zэрэг;
+      // Don't update zovshoorol here - admin controls it
+      const { cert_url, ...formWithoutCert } = form;
       await updateDoc(doc(db,'users',user.uid), {
-        ...form,
-        zovshoorol: hasDegree,
+        ...formWithoutCert,
+        cert_url,
       });
       await refreshProfile();
       setSaved(true);
@@ -237,13 +270,31 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Мэргэжлийн зэрэг */}
+          {/* Мэргэжлийн баталгаажуулалт */}
           <div className="card rounded-2xl p-5 space-y-4 border border-teal-100 bg-teal-50">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🏅</span>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-teal-700">Мэргэжлийн зэрэг</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏅</span>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-teal-700">Мэргэжлийн баталгаажуулалт</h3>
+              </div>
+              {profile?.zovshoorol === true && (
+                <span className="text-xs bg-teal-100 border border-teal-200 text-teal-700 px-2 py-1 rounded-full font-bold">✅ Баталгаажсан</span>
+              )}
+              {profile?.zovshoorol === 'pending' && (
+                <span className="text-xs bg-amber-100 border border-amber-200 text-amber-700 px-2 py-1 rounded-full font-bold">⏳ Хүлээгдэж буй</span>
+              )}
             </div>
-            <p className="text-xs text-teal-600">Зэрэг оруулсан тохиолдолд "Мэргэшсэн ажилтан" хэсэгт харагдах болно</p>
+            {profile?.zovshoorol === true ? (
+              <div className="bg-teal-100 rounded-xl px-4 py-3 text-teal-700 text-sm">
+                ✅ Таны мэргэжлийн үнэмлэх баталгаажсан. "Мэргэшсэн ажилтан" хэсэгт харагдаж байна.
+              </div>
+            ) : profile?.zovshoorol === 'pending' ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-700 text-sm">
+                ⏳ Таны хүсэлт хянагдаж байна. Админ баталгаажуулсны дараа харагдах болно.
+              </div>
+            ) : (
+              <p className="text-xs text-teal-600">Үнэмлэх/дипломны зураг, дугаараа оруулж хүсэлт илгээнэ. Админ баталгаажуулсны дараа "Мэргэшсэн ажилтан" хэсэгт харагдана.</p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Зэрэг / Үнэмлэх</label>
@@ -252,8 +303,50 @@ export default function Profile() {
                   {DEGREES.map(d=><option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
-              <Field label="Сургалтын газар" value={form.surgaltin_gazar} onChange={v=>set('surgaltin_gazar',v)} placeholder="МУИС, МС..."/>
+              <Field label="Диплом / Үнэмлэхийн дугаар" value={form.surgaltin_gazar} onChange={v=>set('surgaltin_gazar',v)} placeholder="Жишээ: MN-2024-001"/>
             </div>
+            {/* Certificate image upload */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Үнэмлэх / Дипломны зураг
+              </label>
+              <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition-all ${
+                certUploading ? 'border-teal-300 bg-teal-50' :
+                form.cert_url ? 'border-teal-300 bg-teal-50' :
+                'border-surf-200 hover:border-teal-300 bg-white'
+              }`}>
+                {certUploading ? (
+                  <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin flex-shrink-0"/>
+                ) : (
+                  <svg className="w-5 h-5 text-teal-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                )}
+                <span className="text-sm text-gray-500 truncate flex-1">
+                  {certUploading ? 'Хуулж байна...' : form.cert_url ? '✅ Зураг хуулагдсан' : 'Зураг сонгох (.jpg, .png, .pdf)'}
+                </span>
+                <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleCertUpload}/>
+              </label>
+              {form.cert_url && (
+                <a href={form.cert_url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline mt-1.5">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                  Зургийг харах
+                </a>
+              )}
+            </div>
+            {/* Submit verification request */}
+            {profile?.zovshoorol !== true && form.zэрэг && (
+              <button type="button" onClick={handleVerifyRequest}
+                disabled={verifyLoading || !form.cert_url || !form.surgaltin_gazar}
+                className="w-full bg-teal-500 hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                {verifyLoading
+                  ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  : '🏅 Баталгаажуулах хүсэлт илгээх'}
+              </button>
+            )}
           </div>
 
           <div className="card rounded-2xl p-5 space-y-4">

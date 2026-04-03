@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   collection, query, onSnapshot, orderBy,
-  where, doc, updateDoc
+  where, doc, updateDoc, serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -98,6 +98,12 @@ export default function Admin() {
       icon: '✅',
       color: 'bg-amber-50 border-amber-100 text-amber-700',
     },
+    {
+      label: 'Хүлээгдэж буй',
+      value: users.filter(u => u.zovshoorol === 'pending').length,
+      icon: '⏳',
+      color: 'bg-teal-50 border-teal-100 text-teal-700',
+    },
   ];
 
   return (
@@ -108,7 +114,7 @@ export default function Admin() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 animate-fade-up-delay">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8 animate-fade-up-delay">
         {stats.map(s => (
           <div key={s.label} className={`card rounded-2xl p-4 border ${s.color}`}>
             <div className="text-2xl mb-2">{s.icon}</div>
@@ -123,6 +129,7 @@ export default function Admin() {
         {[
           { key: 'users',  label: `Бүх хэрэглэгч (${users.length})` },
           { key: 'online', label: `Онлайн (${online.length})` },
+          { key: 'verify', label: `Баталгаажуулалт (${users.filter(u=>u.zovshoorol==='pending').length})` },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -251,6 +258,70 @@ export default function Admin() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Verification requests tab */}
+      {tab === 'verify' && (
+        <div className="space-y-4 animate-fade-up-delay">
+          {users.filter(u => u.zovshoorol === 'pending').length === 0 ? (
+            <div className="card rounded-2xl p-10 text-center text-gray-300">
+              <div className="text-3xl mb-2">✅</div>
+              <p className="text-sm">Хүлээгдэж буй хүсэлт байхгүй байна</p>
+            </div>
+          ) : users.filter(u => u.zovshoorol === 'pending').map(u => (
+            <div key={u.id} className="card rounded-2xl p-5 border border-amber-100 bg-amber-50">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">
+                  {u.photoURL
+                    ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/>
+                    : <span className="text-lg font-bold text-brand-600">{(u.ner||u.email||'?')[0].toUpperCase()}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-bold text-gray-800">
+                    {u.ner ? `${u.ovog||''} ${u.ner}`.trim() : u.email}
+                  </div>
+                  <div className="text-gray-500 text-sm">{u.email}</div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {u.zэрэг && <span className="text-xs bg-teal-50 border border-teal-200 text-teal-700 px-2 py-1 rounded-full">🏅 {u.zэрэг}</span>}
+                    {u.surgaltin_gazar && <span className="text-xs bg-surf-100 border border-surf-200 text-gray-600 px-2 py-1 rounded-full">📄 {u.surgaltin_gazar}</span>}
+                    {u.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-1 rounded-full">{u.chiglel}</span>}
+                  </div>
+                  {u.cert_url && (
+                    <a href={u.cert_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-3 text-xs text-brand-500 hover:text-brand-700 font-semibold border border-brand-200 bg-white px-3 py-1.5 rounded-xl transition-all">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                      Үнэмлэх/Диплом харах
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-3 mt-4 pt-4 border-t border-amber-200">
+                <button
+                  onClick={async () => {
+                    await updateDoc(doc(db, 'users', u.id), {
+                      zovshoorol: true,
+                      verifiedAt: serverTimestamp(),
+                    });
+                  }}
+                  className="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                  ✅ Зөвшөөрөх
+                </button>
+                <button
+                  onClick={async () => {
+                    await updateDoc(doc(db, 'users', u.id), {
+                      zovshoorol: false,
+                      verifiedAt: null,
+                    });
+                  }}
+                  className="flex-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                  ❌ Татгалзах
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -379,16 +379,36 @@ export default function JobList({ type }) {
           </div>
 
           {/* Rating */}
-          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4">
+          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Үнэлгээ</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Нийт үнэлгээ</div>
                 <StarDisplay rating={avgRating(selected.ratings)} count={(selected.ratings||[]).length} size="lg"/>
               </div>
               {selected.uid !== user?.uid && (
                 <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Та үнэлэх</div>
-                  <StarPicker value={myRating} onChange={submitRating}/>
+                  {myRating > 0 ? (
+                    <div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Таны үнэлгээ</div>
+                      <div className="flex items-center gap-2">
+                        <StarDisplay rating={myRating} size="lg"/>
+                        {ratingSubmitting && (
+                          <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"/>
+                        )}
+                        <button
+                          onClick={e => { e.stopPropagation(); setMyRating(0); }}
+                          className="text-xs text-gray-400 hover:text-red-400 transition underline ml-1"
+                        >
+                          өөрчлөх
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Та үнэлэх</div>
+                      <StarPicker value={myRating} onChange={submitRating}/>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -518,7 +538,10 @@ function Modal({ children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={onClose}/>
-      <div className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full max-w-lg z-10 animate-fade-up border border-surf-200">
+      <div
+        className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full max-w-lg z-10 animate-fade-up border border-surf-200"
+        onClick={e => e.stopPropagation()}
+      >
         {children}
       </div>
     </div>
