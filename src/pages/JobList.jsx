@@ -35,6 +35,7 @@ const configs = {
       {key:'chiglel',   label:'Чиглэл',            required:false},
       {key:'hayg',      label:'Хаяг',              required:false, isAddress:true},
       {key:'cv_text',   label:'CV / Намтар',       required:false, textarea:true},
+      {key:'utas',      label:'Холбоо барих утас',  required:false},
       {key:'nemelt',    label:'Нэмэлт',            required:false, textarea:true},
     ],
     cardTitle:(d)=>d.ner?`${d.ovog||''} ${d.ner}`.trim():'Ажил хайгч',
@@ -52,6 +53,7 @@ const configs = {
       {key:'chiglel',           label:'Чиглэл',            required:false},
       {key:'hayg',              label:'Хаяг',              required:false, isAddress:true},
       {key:'ajilchinaas_huseh', label:'Ажилтнаас хүсэх',  required:false, textarea:true},
+      {key:'utas',              label:'Холбоо барих утас',  required:false},
       {key:'nemelt',            label:'Нэмэлт',            required:false, textarea:true},
     ],
     cardTitle:(d)=>d.alban_tushaal||'Ажлын зар',
@@ -69,6 +71,7 @@ const configs = {
       {key:'chiglel',           label:'Чиглэл',           required:false},
       {key:'hayg',              label:'Хаяг',             required:false, isAddress:true},
       {key:'ajilchinaas_huseh', label:'Шаардлага',        required:false, textarea:true},
+      {key:'utas',              label:'Холбоо барих утас', required:false},
       {key:'nemelt',            label:'Нэмэлт',           required:false, textarea:true},
     ],
     cardTitle:(d)=>d.alban_tushaal||'Дадлага',
@@ -83,6 +86,7 @@ const configs = {
       {key:'une_hansh',     label:'Үнэ ханш (₮)',  required:false},
       {key:'hugatsaa',      label:'Хугацаа',       required:false},
       {key:'hayg',          label:'Хаяг / Линк',   required:false, isAddress:true},
+      {key:'utas',          label:'Холбоо барих утас', required:false},
       {key:'nemelt',        label:'Дэлгэрэнгүй',   required:false, textarea:true},
     ],
     cardTitle:(d)=>d.ner||'Сургалт',
@@ -115,6 +119,7 @@ export default function JobList({ type }) {
   const [featuring, setFeaturing] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratedItemId, setRatedItemId] = useState(null); // track which item we rated
 
   useEffect(() => {
     setItems([]); setLoading(true);
@@ -125,12 +130,13 @@ export default function JobList({ type }) {
     });
   }, [type]);
 
-  // When selected changes, load my existing rating
+  // Load my existing rating only when opening a NEW item
   useEffect(() => {
     if (!selected || !user) return;
+    if (selected.id === ratedItemId) return; // don't reset after submitting rating
     const existing = (selected.ratings||[]).find(r=>r.uid===user.uid);
     setMyRating(existing?.stars || 0);
-  }, [selected, user]);
+  }, [selected?.id, user]);
 
   // CV file → extract text via mammoth
   const handleCvFile = async (e) => {
@@ -227,6 +233,7 @@ export default function JobList({ type }) {
   const submitRating = async (stars) => {
     if (!selected || !user || ratingSubmitting) return;
     setMyRating(stars);
+    setRatedItemId(selected.id); // mark so useEffect won't reset
     setRatingSubmitting(true);
     const itemRef = doc(db, cfg.collection, selected.id);
     // Remove old rating then add new
@@ -436,20 +443,28 @@ export default function JobList({ type }) {
                   {selectedOwner.photoURL
                     ? <img src={selectedOwner.photoURL} alt="" className="w-full h-full object-cover"/>
                     : <span className="text-sm font-bold text-brand-600">
-                        {(selectedOwner.ner||selected.email||'?')[0].toUpperCase()}
+                        {(selectedOwner.ner||'?')[0].toUpperCase()}
                       </span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-gray-800 font-semibold text-sm">
-                    {selectedOwner.ner?`${selectedOwner.ovog||''} ${selectedOwner.ner}`.trim():selected.email}
+                    {selectedOwner.ner?`${selectedOwner.ovog||''} ${selectedOwner.ner}`.trim():'—'}
                   </div>
-                  {selectedOwner.email && <div className="text-gray-400 text-xs mt-0.5">{selectedOwner.email}</div>}
+                  {/* email hidden for privacy */}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {selectedOwner.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{selectedOwner.chiglel}</span>}
                     {selectedOwner.turshlaga && <span className="text-xs bg-surf-100 border border-surf-200 text-gray-500 px-2 py-0.5 rounded-full">{selectedOwner.turshlaga}</span>}
                     {selectedOwner.tsalin && <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">{selectedOwner.tsalin}₮</span>}
                   </div>
                   {selectedOwner.chadvar && <div className="mt-1.5 text-xs text-gray-500">{selectedOwner.chadvar}</div>}
+                  {selected.utas && (
+                    <div className="mt-1.5 flex items-center gap-1 text-xs text-brand-600 font-medium">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                      </svg>
+                      {selected.utas}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

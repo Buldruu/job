@@ -356,12 +356,15 @@ export default function Admin() {
               </button>
             </div>
 
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {[
+                { label: 'Имэйл',      value: selected.email },
                 { label: 'Чиглэл',     value: selected.chiglel },
                 { label: 'Чадвар',     value: selected.chadvar },
                 { label: 'Туршлага',   value: selected.turshlaga },
                 { label: 'Хаяг',       value: selected.hayg },
+                { label: 'Зэрэг',      value: selected.zэрэг },
+                { label: 'Диплом №',   value: selected.surgaltin_gazar },
                 { label: 'CV / Намтар',value: selected.cv },
                 { label: 'Нэмэлт',     value: selected.nemelt },
                 { label: 'Бүртгүүлсэн',value: selected.createdAt?.toDate?.()?.toLocaleDateString('mn-MN') },
