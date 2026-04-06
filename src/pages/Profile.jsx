@@ -5,6 +5,7 @@ import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { StarDisplay } from '../components/RatingStars';
+import mammoth from 'mammoth';
 
 const chiglels = ['IT / Технологи','Санхүү','Маркетинг','Инженер','Эрүүл мэнд','Боловсрол','Хуулийн','Дизайн','Бусад'];
 const DEGREES  = ['Мастер','Доктор','Мэргэжлийн үнэмлэх'];
@@ -29,6 +30,9 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [certUploading, setCertUploading] = useState(false);
+  const [cvFileUploading, setCvFileUploading] = useState(false);
+  const [cvFileInfo, setCvFileInfo] = useState({ name: '', url: '' });
+  const [showCvModal, setShowCvModal] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
 
   // Finance
@@ -55,6 +59,9 @@ export default function Profile() {
       surgaltin_gazar:profile.surgaltin_gazar|| '',
       cert_url:       profile.cert_url        || '',
     });
+    if (profile.cv_file_name) {
+      setCvFileInfo({ name: profile.cv_file_name, url: profile.cv_file_url || '' });
+    }
   }, [profile]);
 
   useEffect(() => {
@@ -110,15 +117,35 @@ export default function Profile() {
 
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
+  const resizeImageToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        // Crop square from center
+        const size = Math.min(img.width, img.height);
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = 200; canvas.height = 200;
+        canvas.getContext('2d').drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+        resolve(canvas.toDataURL('image/jpeg', 0.65));
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhotoUploading(true);
     try {
-      const storageRef = ref(storage, `avatars/${user.uid}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      await updateDoc(doc(db,'users',user.uid), { photoURL: url });
+      // Resize to 200x200, compress to JPEG 65% → ~15-25KB → store in Firestore (free, instant)
+      const base64 = await resizeImageToBase64(file);
+      await updateDoc(doc(db,'users',user.uid), { photoURL: base64 });
       await refreshProfile();
     } catch(err) { console.error(err); }
     setPhotoUploading(false);
@@ -152,6 +179,36 @@ export default function Profile() {
       await refreshProfile();
     } catch(err) { console.error(err); }
     setVerifyLoading(false);
+  };
+
+  const handleCvFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCvFileUploading(true);
+    try {
+      // Upload to Firebase Storage for download link
+      const storageRef = ref(storage, `cvs/${user.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setCvFileInfo({ name: file.name, url });
+
+      // Extract text from .docx using mammoth
+      if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+        const buf = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        if (result.value.trim()) {
+          set('cv', result.value.trim());
+        }
+      }
+
+      // Save file info to Firestore
+      await updateDoc(doc(db, 'users', user.uid), {
+        cv_file_name: file.name,
+        cv_file_url: url,
+      });
+    } catch(err) { console.error(err); }
+    setCvFileUploading(false);
+    e.target.value = '';
   };
 
   const handleSave = async (e) => {
@@ -352,9 +409,86 @@ export default function Profile() {
           <div className="card rounded-2xl p-5 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Дэлгэрэнгүй</h3>
             <TextArea label="Хаяг"        value={form.hayg}   onChange={v=>set('hayg',v)}   placeholder="Улаанбаатар, ..." rows={2}/>
-            <TextArea label="CV / Намтар" value={form.cv}     onChange={v=>set('cv',v)}     placeholder="Товч намтар, туршлага..." rows={4}/>
+            {/* CV Section */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">CV / Намтар</label>
+
+              {/* Word file upload */}
+              <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition-all mb-3 ${
+                cvFileInfo.name ? 'border-brand-300 bg-brand-50' : 'border-surf-200 hover:border-brand-300 bg-surf-50'
+              }`}>
+                {cvFileUploading
+                  ? <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin flex-shrink-0"/>
+                  : <svg className="w-5 h-5 text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>}
+                <span className="text-sm text-gray-500 truncate flex-1">
+                  {cvFileUploading ? 'Уншиж байна...' : cvFileInfo.name || 'Word файл оруулах (.docx) — текст автоматаар орно'}
+                </span>
+                <input type="file" accept=".docx,.doc" className="hidden" onChange={handleCvFileUpload}/>
+              </label>
+
+              {/* File actions */}
+              {cvFileInfo.name && (
+                <div className="flex gap-2 mb-3">
+                  <button type="button" onClick={() => setShowCvModal(true)}
+                    className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-800 bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-xl transition-all font-medium">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Томоор харах
+                  </button>
+                  <a href={cvFileInfo.url} target="_blank" rel="noopener noreferrer" download={cvFileInfo.name}
+                    className="flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl transition-all font-medium">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Татах ({cvFileInfo.name})
+                  </a>
+                </div>
+              )}
+
+              {/* Editable text area */}
+              <textarea value={form.cv} onChange={e => set('cv', e.target.value)}
+                placeholder="Товч намтар, туршлага... (Word файл оруулбал автоматаар орно)"
+                rows={5} className="input-base resize-none"/>
+            </div>
             <TextArea label="Нэмэлт"      value={form.nemelt} onChange={v=>set('nemelt',v)} placeholder="Бусад мэдээлэл..." rows={3}/>
           </div>
+
+          {/* CV full-screen modal */}
+          {showCvModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowCvModal(false)}>
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-surf-100">
+                  <div>
+                    <h3 className="font-display font-bold text-gray-800">CV / Намтар</h3>
+                    {cvFileInfo.name && <p className="text-xs text-gray-400 mt-0.5">{cvFileInfo.name}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {cvFileInfo.url && (
+                      <a href={cvFileInfo.url} target="_blank" rel="noopener noreferrer" download={cvFileInfo.name}
+                        className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-medium hover:bg-emerald-100 transition">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Татах
+                      </a>
+                    )}
+                    <button onClick={() => setShowCvModal(false)} className="text-gray-400 hover:text-gray-600 p-1 transition">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto px-6 py-5">
+                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{form.cv || 'CV мэдээлэл байхгүй байна'}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {saved && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-emerald-600 text-sm">
