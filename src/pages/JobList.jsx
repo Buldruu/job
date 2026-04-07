@@ -110,7 +110,8 @@ export default function JobList({ type }) {
   const [selected, setSelected] = useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [filterChiglel, setFilterChiglel] = useState('Бүгд');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState('');       // typed value
+  const [activeSearch, setActiveSearch] = useState(''); // confirmed search
   const [form, setForm] = useState({});
   const [cvFile, setCvFile] = useState(null);
   const [cvParsing, setCvParsing] = useState(false);
@@ -256,10 +257,12 @@ export default function JobList({ type }) {
     }
   };
 
+  const doSearch = () => setActiveSearch(search.trim());
+
   const filtered = items.filter(i => {
-    const mc = filterChiglel==='Бүгд' || i.chiglel===filterChiglel;
-    const s  = search.toLowerCase();
-    return mc && (!s || Object.values(i).some(v=>String(v).toLowerCase().includes(s)));
+    const mc = filterChiglel === 'Бүгд' || i.chiglel === filterChiglel;
+    const s  = activeSearch.toLowerCase();
+    return mc && (!s || Object.values(i).some(v => String(v).toLowerCase().includes(s)));
   });
 
   return (
@@ -285,11 +288,26 @@ export default function JobList({ type }) {
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
-          <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Хайх..." className="input-base pl-9"/>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doSearch()}
+            placeholder="Хайх... (Enter дарна уу)"
+            className="input-base pl-9 pr-4"
+          />
         </div>
+        <button
+          onClick={doSearch}
+          className="flex-shrink-0 bg-brand-500 hover:bg-brand-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-btn transition-all"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Хайх
+        </button>
         {cfg.fields.some(f=>f.key==='chiglel') && (
-          <select value={filterChiglel} onChange={e=>setFilterChiglel(e.target.value)} className="input-base w-auto">
+          <select value={filterChiglel} onChange={e => { setFilterChiglel(e.target.value); setActiveSearch(''); setSearch(''); }} className="input-base w-auto">
             {chiglels.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         )}
@@ -302,7 +320,16 @@ export default function JobList({ type }) {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card rounded-2xl p-12 text-center text-gray-300 animate-fade-up-delay">
-          <div className="text-4xl mb-3">📭</div><p className="text-sm">Зар байхгүй байна</p>
+          <div className="text-4xl mb-3">📭</div>
+          <p className="text-sm">
+            {activeSearch ? `"${activeSearch}" хайлтад тохирох зар байхгүй` : 'Зар байхгүй байна'}
+          </p>
+          {activeSearch && (
+            <button onClick={() => { setSearch(''); setActiveSearch(''); }}
+              className="mt-3 text-xs text-brand-500 hover:underline">
+              Хайлтыг арилгах
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up-delay">
