@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import BrandModal from './BrandModal';
 
 const navItems = [
   { to: '/', label: 'Нүүр', icon: (
@@ -49,6 +51,7 @@ const linkClass = (isActive) =>
 export default function Layout() {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
+  const [showBrand, setShowBrand] = useState(false);
 
   const handleLogout = async () => { await signOut(auth); navigate('/login'); };
 
@@ -59,16 +62,20 @@ export default function Layout() {
   return (
     <div className="flex h-screen overflow-hidden bg-surf-50">
       <aside className="w-60 flex-shrink-0 sidebar flex flex-col">
-        {/* Brand */}
+        {/* Brand — click to open brand book */}
         <div className="px-5 py-5 border-b border-surf-200">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center shadow-btn flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowBrand(true)}
+            className="flex items-center gap-2.5 hover:opacity-75 active:scale-95 transition-all group w-full"
+          >
+            <div className="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center shadow-btn flex-shrink-0 group-hover:shadow-md transition-shadow">
               <svg className="w-[18px] h-[18px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0H8m8 0a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2"/>
               </svg>
             </div>
             <span className="text-lg font-display font-bold text-gray-800 tracking-tight">HaGA</span>
-          </div>
+          </button>
         </div>
 
         {/* Nav */}
@@ -112,6 +119,8 @@ export default function Layout() {
       <main className="flex-1 overflow-y-auto bg-surf-50">
         <Outlet />
       </main>
+
+      {showBrand && <BrandModal onClose={() => setShowBrand(false)}/>}
     </div>
   );
 }
