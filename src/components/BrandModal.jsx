@@ -199,7 +199,7 @@ function LogoTab() {
         <HaGaLogo width={80} variant="grad"/>
         <div style={{ display:'flex', flexDirection:'column', gap:16, flex:1 }}>
           {[
-            { badge:'H', mn:'Haaga — ХАЛТУРА', en:'Side Job / Gig Work', desc:'H үсгийн хоёр босоо тулгуур нь ажилтан ба ажил олгогчийг төлөөлнө. Хэвтээ гүүр нь HaGa платформ — тэднийг хамгийн богино замаар холбодог.' },
+            { badge:'H', mn:'HaGa — ХАЛТУРА', en:'Side Job / Gig Work', desc:'H үсгийн хоёр босоо тулгуур нь ажилтан ба ажил олгогчийг төлөөлнө. Хэвтээ гүүр нь HaGa платформ — тэднийг хамгийн богино замаар холбодог.' },
             { badge:'G', mn:'Gig / Growth / Gateway', en:'Халтура / Өсөлт / Гарц', desc:'G үсэг нь нээлттэй тойрог — боломжийн гарц. Нэг халтуур нь нээлттэй боломжийн эхлэл. HaGa тэр өргөн боломжийг нэг дороо нийлүүлнэ.' },
           ].map(m => (
             <div key={m.badge} style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
@@ -253,7 +253,7 @@ function LogoTab() {
         <div style={{ width:1, height:60, background:LG }}/>
         <div>
           <div style={{ ...bebas(36), letterSpacing:3, ...gText }}>HAGA</div>
-          <div style={{ ...mono, fontSize:9, color:GR, marginTop:5 }}>Haaga · Боломж · Дэлхийд Гарна</div>
+          <div style={{ ...mono, fontSize:9, color:GR, marginTop:5 }}>HaGa · Боломж · Дэлхийд Гарна</div>
         </div>
       </div>
 
@@ -361,7 +361,7 @@ function TypeTab() {
       </div>
 
       {[
-        { sample:<div style={{ ...bebas(52), ...gText, letterSpacing:2 }}>HAAGA</div>, lbl:'Display / Hero — Bebas Neue', meta:'48–84px · Gradient' },
+        { sample:<div style={{ ...bebas(52), ...gText, letterSpacing:2 }}>HaGa</div>, lbl:'Display / Hero — Bebas Neue', meta:'48–84px · Gradient' },
         { sample:<div style={{ fontSize:24, fontWeight:700, color:D }}>Таны карьерын дараагийн алхам эндээс</div>, lbl:'H1 — DM Sans Bold 700', meta:'28–36px · #0A0F2E' },
         { sample:<div style={{ fontSize:14, fontWeight:300, color:'#374151', lineHeight:1.85 }}>Ажил хайх, шинэ боломж олох — хэрэгтэй бол одоо эхэл. Мянга мянган вакансы нэг дороо.</div>, lbl:'Body — DM Sans Light 300', meta:'15–17px · Line-height 1.85' },
         { sample:<div style={{ fontFamily:"'Space Mono',monospace", fontSize:11, color:BL, letterSpacing:3, textTransform:'uppercase' }}>UI Label · Tag · Caption</div>, lbl:'Label / UI — Space Mono', meta:'10–13px · ALL CAPS' },
@@ -486,7 +486,7 @@ function AppTab() {
         </div>
         <div style={{ height:1, background:'rgba(255,255,255,.06)', maxWidth:280, margin:'0 auto 12px' }}/>
         <div style={{ ...mono, fontSize:9, color:'rgba(255,255,255,.18)', lineHeight:2.2 }}>
-          HaGa = Haaga · Халтура · Карьер · Mongolia's Job Platform<br/>
+          HaGa = HaGa · Халтура · Карьер · Mongolia's Job Platform<br/>
           Brand Identity Guidelines · Version 2.0 · 2026 · © HaGa Mongolia
         </div>
       </div>
