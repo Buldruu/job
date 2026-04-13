@@ -94,7 +94,7 @@ export default function BrandModal({ onClose }) {
               <div style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' }}>
                 Монгол хүн бүрт ажлын боломж.<br/>
                 <span style={{ color: 'rgba(255,255,255,0.85)', fontStyle: 'normal', fontWeight: 600 }}>
-                  HaGa — ажилгүйдлийг бууруулна.
+                  HaGa — халтураас карьер хүртэлх гүүр.
                 </span>
               </div>
             </div>
@@ -153,11 +153,11 @@ function BrandSection() {
             <span style={{
               background: 'linear-gradient(90deg,#1536C8,#38BDF8)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
-            }}>ХАЛТАРДАГ.</span>
+            }}>ХАЛТУРЛАНА.</span>
           </div>
           <div style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.6)', lineHeight: 1.9, maxWidth: 520 }}>
-            Монголд өнөөдөр хэдэн мянган залуу ажлын байр хайж байна. Хэдэн зуун компани зөв хүнээ олж чадахгүй байна.<br/><br/>
-            Энэ зай — <em style={{ color: 'rgba(255,255,255,0.9)', fontStyle: 'normal', fontWeight: 500 }}>HaGa</em> таслан зогсооно.
+            Монгол хүн бүр халтурладаг — нэмэлт орлого хайдаг, ур чадвараа хэрэглэхийг хүсдэг.<br/><br/>
+            Тэр халтураа <em style={{ color: 'rgba(255,255,255,0.9)', fontStyle: 'normal', fontWeight: 500 }}>мэргэжлийн карьер болгох</em> цаг болсон. HaGa тэр гүүрийг байгуулна.
           </div>
         </div>
         <div className="absolute bottom-4 right-6 opacity-5"
@@ -169,9 +169,9 @@ function BrandSection() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { num: '60K+', label: 'Ажилгүй иргэн', text: 'Монголд бүртгэлтэй ажилгүй иргэдийн тоо. HaGa тэр тоог бууруулах зорилготой.' },
+          { num: '60K+', label: 'Ажилгүй иргэн', text: 'Монголд халтуур хайдаг иргэдийн тоо өдрөөс өдөрт өсч байна. HaGa тэр боломжийг нийтэд нь нэг дороо нийлүүлнэ.' },
           { num: '3X',   label: 'Хурдан холболт', text: 'Уламжлалт аргаас 3 дахин хурдан. Зөв ажилтан, зөв компанийг богино хугацаанд нийлүүлнэ.' },
-          { num: '🌏',   label: 'Дэлхийн өрсөлдөөн', text: 'Монгол компаниуд дэлхийн зах зээлд өрсөлдөхийн тулд дэлхийн чанарын ажилтан хэрэгтэй.' },
+          { num: '🌏',   label: 'Дэлхийн өрсөлдөөн', text: 'Нэг халтуур нь олон компанид хэрэгцээтэй ур чадвар. HaGa тэр тохирлыг олж чадна.' },
         ].map(c => (
           <div key={c.label} className="bg-white rounded-2xl p-5 relative overflow-hidden border border-gray-100">
             <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
@@ -191,8 +191,8 @@ function BrandSection() {
       {/* Values */}
       <div className="grid grid-cols-2 gap-4">
         {[
-          { icon: '🎯', sub: 'Боломж олгох',       title: 'Хүн бүрт ажил',         text: 'Мэргэжил, туршлага, байршлаас үл хамааран бид боломжийг нийтэд нь нээлттэй болгоно.' },
-          { icon: '📉', sub: 'Ажилгүйдлийг бууруулах', title: 'Тоог бага болгоно',  text: 'Ажилгүйдэл бол зөвхөн статистик биш — хүний амьдрал. HaGa үүнийг жинхэнэ утгаараа бууруулна.' },
+          { icon: '🎯', sub: 'Халтураас карьер',    title: 'Хүн бүрт боломж',        text: 'Халтуур хийхээс эхэлж, мэргэжлийн карьер болгоно. Мэргэжил, туршлага, байршлаас үл хамааран бид тэр замыг нээнэ.' },
+          { icon: '📉', sub: 'Халтура → Орлого',       title: 'Нэмэлт орлого',       text: 'Халтуур хийх нь орлогоо нэмэгдүүлэх хамгийн хурдан арга. HaGa тэр боломжийг нийтэд нь хурдан, ил тод нийлүүлнэ.' },
           { icon: '🌏', sub: 'Дэлхийтэй өрсөлдөх', title: 'Global-ready ажилтан', text: 'Монгол компаниуд дэлхийн чанарын боловсон хүчин хэрэгтэй. HaGa тэр холболтыг хийнэ.' },
           { icon: '💬', sub: 'Дуу хоолой',          title: 'Итгэлтэй, шударга',     text: 'Иргэдэд — найрсаг чиглүүлэгч. Компаниудад — найдвартай түнш. Хоёуланд — үр дүн гаргадаг.' },
         ].map(v => (
@@ -208,10 +208,10 @@ function BrandSection() {
       {/* Voice tones */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { head: '🔥 Дулаан', headStyle: { background: '#FEF3C7', color: '#92400E' }, eg: 'Таны ур чадвар хэн нэгэнд хэрэгтэй байна. Бид тэр хүнийг олоход туслана.' },
-          { head: '⚡ Итгэлтэй', headStyle: { background: '#EDE9FE', color: '#5B21B6' }, eg: 'Монгол ажилтан дэлхийн аль ч компанид өрсөлдөж чадна.' },
-          { head: '✓ Шударга',  headStyle: { background: '#DCFCE7', color: '#15803D' }, eg: 'Ажлын зар хайхад цаг алдах хэрэггүй. Танд тохирсоныг бид шүүж өгнө.' },
-          { head: '🫶 Хүнлэг',  headStyle: { background: '#FCE7F3', color: '#9D174D' }, eg: 'Таны профайл 12 компани хайж байна. Харах уу?' },
+          { head: '🔥 Дулаан', headStyle: { background: '#FEF3C7', color: '#92400E' }, eg: 'Таны халтура — хэн нэгний хайж буй ур чадвар. Бид тэр холболтыг хийнэ.' },
+          { head: '⚡ Итгэлтэй', headStyle: { background: '#EDE9FE', color: '#5B21B6' }, eg: 'Халтуур хийхээс мэргэжлийн карьер хүртэл — бид тэр зайг богиносгоно.' },
+          { head: '✓ Шударга',  headStyle: { background: '#DCFCE7', color: '#15803D' }, eg: 'Халтура хайхад цаг алдах хэрэггүй. Танд тохирсон боломжийг бид шүүж өгнө.' },
+          { head: '🫶 Хүнлэг',  headStyle: { background: '#FCE7F3', color: '#9D174D' }, eg: 'Шинэ халтурын 5 боломж танд тохирч байна. Харах уу?' },
         ].map(t => (
           <div key={t.head} className="rounded-2xl overflow-hidden border border-gray-100">
             <div className="px-4 py-2.5" style={{ ...t.headStyle, fontFamily: "'Space Mono',monospace", fontSize: 10, letterSpacing: 1, fontWeight: 700 }}>{t.head}</div>
@@ -239,8 +239,8 @@ function LogoSection() {
         }}>HaGa</div>
         <div className="space-y-4">
           {[
-            { badge: 'H', mn: 'Haaga — Халтвар', en: 'Stumble / Fall', desc: 'H үсгийн хоёр тулгуур нь ажилтан ба компанийг төлөөлнө. Хэвтээ гүүр нь HaGa платформ.' },
-            { badge: 'G', mn: 'Growth / Gateway', en: 'Өсөлт / Гарц',  desc: 'G үсэг нь нээлттэй тойрог — боломжийн гарц. Нээлттэй талд нь орход ертөнц өргөн болдог.' },
+            { badge: 'H', mn: 'Haaga — Халтура', en: 'Side Job / Gig Work', desc: 'H үсгийн хоёр тулгуур нь ажилтан ба ажил олгогчийг төлөөлнө. Хэвтээ гүүр нь HaGa — хоёрыг богино замаар, хамгийн зөв байдлаар холбодог платформ.' },
+            { badge: 'G', mn: 'Gig / Growth / Gateway', en: 'Халтура / Өсөлт / Гарц', desc: 'G үсэг нь нээлттэй тойрог — боломжийн гарц. Нээлттэй талд нь орход ертөнц өргөн болдог.' },
           ].map(m => (
             <div key={m.badge} className="flex gap-3">
               <div className="flex-shrink-0 text-white font-bold text-lg px-3 py-1 rounded-lg"
@@ -449,11 +449,11 @@ function AppSection() {
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%,rgba(37,99,235,0.2) 0%,transparent 65%)' }}/>
         <div className="relative z-10">
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 48, color: 'white', letterSpacing: 2, lineHeight: 1, marginBottom: 8 }}>
-            БОЛОМЖ БҮРТ<br/>
-            <span style={{ background: 'linear-gradient(90deg,#1536C8,#38BDF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>МОНГОЛ ХҮЧИН</span>
+            ХАЛТУРАА<br/>
+            <span style={{ background: 'linear-gradient(90deg,#1536C8,#38BDF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>КАРЬЕР БОЛГО</span>
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 300, fontStyle: 'italic' }}>
-            Connecting Mongolian Talent with Global Opportunity
+            Turn Your Gig Into a Career — HaGa Mongolia
           </div>
         </div>
       </div>
@@ -518,9 +518,9 @@ function AppSection() {
       <div className="rounded-2xl p-6 text-center" style={{ background: '#0A0F2E' }}>
         <HaGaLogo width={44} light/>
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 28, letterSpacing: 4, background: 'linear-gradient(90deg,#60A5FA,#67E8F9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginTop: 10, marginBottom: 4 }}>HAGA</div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontWeight: 300, marginBottom: 12 }}>"Монгол хүн бүрт ажлын боломж. Монгол компани бүрт зөв ажилтан."</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontWeight: 300, marginBottom: 12 }}>"Халтураас карьер хүртэл — HaGa таны дараагийн алхмыг бэлтгэнэ."</div>
         <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, color: 'rgba(255,255,255,0.15)', letterSpacing: 3, textTransform: 'uppercase', lineHeight: 2 }}>
-          HaGa = Haaga · Боломж · Өсөлт · Mongolia's Job Platform<br/>
+          HaGa = Haaga · Халтура · Карьер · Mongolia's Gig & Job Platform<br/>
           Brand Identity Guidelines · Version 2.0 · © 2025 HaGa Mongolia
         </div>
       </div>
