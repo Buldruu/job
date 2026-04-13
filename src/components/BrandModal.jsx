@@ -1,6 +1,21 @@
 import HaGaLogo from './HaGaLogo';
 import { useState } from 'react';
 
+
+const grad  = 'linear-gradient(135deg,#1536C8 0%,#2563EB 50%,#38BDF8 100%)';
+const gradH = 'linear-gradient(90deg,#1536C8,#38BDF8)';
+const dark  = '#0A0F2E';
+const navy  = '#1536C8';
+const blue  = '#2563EB';
+const sky   = '#38BDF8';
+const gray  = '#6B7280';
+const lg    = '#E5E9F2';
+const light = '#F0F6FF';
+const monoSm = { fontFamily: "'Space Mono',monospace", fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' };
+const bebas = (sz, extra={}) => ({ fontFamily: "'Bebas Neue',sans-serif", fontSize: sz, lineHeight: 1, ...extra });
+const gradText  = { background: grad,  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' };
+const gradTextH = { background: gradH, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' };
+
 export default function BrandModal({ onClose }) {
   const [tab, setTab] = useState('brand');
 
