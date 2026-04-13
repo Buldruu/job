@@ -1,53 +1,5 @@
+import HaGaLogo from './HaGaLogo';
 import { useState } from 'react';
-
-/* ── Shared SVG Logo ── */
-const Logo = ({ width = 80, variant = 'grad' }) => {
-  const id = `lg${width}${variant}`;
-  const fills = {
-    grad:  [['#1536C8', '0'], ['#2563EB', '.5'], ['#38BDF8', '1']],
-    light: [['#60A5FA', '0'], ['#67E8F9', '1']],
-    white: null,
-  };
-  const stops = fills[variant];
-  return (
-    <svg width={width} viewBox="0 0 240 170" fill="none">
-      {stops && (
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="240" y2="170" gradientUnits="userSpaceOnUse">
-            {stops.map(([c, o]) => <stop key={o} stopColor={c} offset={o}/>)}
-          </linearGradient>
-        </defs>
-      )}
-      {['rect x="10" y="20" width="28" height="130" rx="4"',
-        'rect x="10" y="68" width="90" height="34" rx="4"',
-        'rect x="72" y="20" width="28" height="130" rx="4"',
-        'path d="M130 150C85 150 72 110 80 75C88 35 130 20 165 30C185 36 195 50 200 68H165C160 56 148 50 135 52C118 55 110 72 112 92C114 112 128 126 148 124C162 122 172 114 174 102H150V82H205V150H185V135C175 145 162 152 148 152L130 150Z"'
-      ].map((el, i) => {
-        const Tag = el.startsWith('path') ? 'path' : 'rect';
-        const attrs = Object.fromEntries(
-          el.replace(/^(rect|path) /, '').match(/(\w+)="([^"]*)"/g)
-            ?.map(a => { const [k, v] = a.split('='); return [k, v.replace(/"/g, '')]; }) || []
-        );
-        return <Tag key={i} {...attrs} fill={stops ? `url(#${id})` : 'white'}/>;
-      })}
-    </svg>
-  );
-};
-
-const grad = 'linear-gradient(135deg,#1536C8 0%,#2563EB 50%,#38BDF8 100%)';
-const gradH = 'linear-gradient(90deg,#1536C8,#38BDF8)';
-const dark = '#0A0F2E';
-const navy = '#1536C8';
-const blue = '#2563EB';
-const sky  = '#38BDF8';
-const gray = '#6B7280';
-const lg   = '#E5E9F2';
-const light = '#F0F6FF';
-
-const monoSm = { fontFamily: "'Space Mono',monospace", fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' };
-const bebas = (sz, extra={}) => ({ fontFamily: "'Bebas Neue',sans-serif", fontSize: sz, lineHeight: 1, ...extra });
-const gradText = { background: grad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' };
-const gradTextH = { background: gradH, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' };
 
 export default function BrandModal({ onClose }) {
   const [tab, setTab] = useState('brand');
@@ -91,7 +43,7 @@ export default function BrandModal({ onClose }) {
             {/* Icon box */}
             <div className="flex-shrink-0 w-24 h-24 flex items-center justify-center rounded-2xl"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
-              <Logo width={60} variant="grad"/>
+              <HaGaLogo width={60} variant="grad"/>
             </div>
 
             <div>
@@ -302,7 +254,7 @@ function LogoTab() {
           ].map((v, i) => (
             <div key={i} className="rounded-2xl overflow-hidden relative flex items-center justify-center"
               style={{ background: v.bg, border: v.border, minHeight: 160 }}>
-              <Logo width={90} variant={v.variant}/>
+              <HaGaLogo width={90} variant={v.variant}/>
               <span className="absolute bottom-3 left-4" style={{ ...monoSm, fontSize: 9, color: v.lblCol }}>{v.label}</span>
             </div>
           ))}
@@ -311,7 +263,7 @@ function LogoTab() {
 
       {/* Wordmark */}
       <div className="bg-white rounded-2xl p-8 flex items-center justify-center gap-6" style={{ border: `1px solid ${lg}` }}>
-        <Logo width={68} variant="grad"/>
+        <HaGaLogo width={68} variant="grad"/>
         <div style={{ width: 1, height: 60, background: lg }}/>
         <div>
           <div style={{ ...bebas(36), letterSpacing: 3, ...gradText }}>HAGA</div>
@@ -509,7 +461,7 @@ function AppTab() {
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.55)', fontWeight: 300, lineHeight: 1.8 }}>Ажилгүйдлийг бууруулна. Дэлхийтэй өрсөлдөх боловсон хүчин бүтээнэ — HaGa.</div>
           </div>
           <div className="relative z-10 text-center">
-            <Logo width={100} variant="light"/>
+            <HaGaLogo width={100} variant="light"/>
             <div style={{ ...monoSm, fontSize: 9, color: 'rgba(255,255,255,.3)', marginTop: 8 }}>haga.mn</div>
           </div>
         </div>
@@ -549,7 +501,7 @@ function AppTab() {
 
       {/* Footer */}
       <div className="rounded-2xl p-7 text-center" style={{ background: dark }}>
-        <Logo width={48} variant="light"/>
+        <HaGaLogo width={48} variant="light"/>
         <div style={{ ...bebas(32), letterSpacing: 4, ...gradText, marginTop: 10, marginBottom: 4 }}>HAGA</div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,.35)', fontStyle: 'italic', fontWeight: 300, marginBottom: 12 }}>
           "Монгол хүн бүрт ажлын боломж. Монгол компани бүрт зөв ажилтан."

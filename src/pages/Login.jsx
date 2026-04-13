@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import HaGaLogo from '../components/HaGaLogo';
 import BrandModal from '../components/BrandModal';
 
 const ERRORS = {
@@ -59,12 +60,7 @@ function AuthShell({ children }) {
         <div className="text-center mb-8">
           <button type="button" onClick={() => setShowBrand(true)}
             className="inline-flex items-center gap-2.5 mb-3 hover:opacity-80 active:scale-95 transition-all group">
-            <div className="w-10 h-10 bg-brand-500 rounded-2xl flex items-center justify-center shadow-btn group-hover:shadow-lg transition-shadow">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0H8m8 0a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2"/>
-              </svg>
-            </div>
+            <HaGaLogo width={44} variant="grad"/>
             <span className="text-2xl font-display font-bold text-gray-800">HaGA</span>
           </button>
           <p className="text-gray-400 text-sm">Монголын ажлын зах зээл</p>
