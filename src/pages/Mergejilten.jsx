@@ -78,7 +78,7 @@ export default function Mergejilten() {
   });
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>

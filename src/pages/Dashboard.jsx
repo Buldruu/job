@@ -63,7 +63,7 @@ export default function Dashboard() {
   const getSub = (item) => item.baiguulgiin_ner||item.baiguulga_ner||item.chiglel||'';
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-8 max-w-3xl">
       {/* Header */}
       <div className="mb-10 animate-fade-up">
         <p className="text-gray-400 text-sm mb-1">{greeting},</p>
@@ -73,7 +73,7 @@ export default function Dashboard() {
       {/* Menu cards */}
       <div className="animate-fade-up-delay mb-10">
         <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Цэс</p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {quickLinks.map(link => (
             <button key={link.to} onClick={() => navigate(link.to)}
               className={`card card-hover rounded-2xl p-6 text-left border ${link.border} ${link.bg}`}>

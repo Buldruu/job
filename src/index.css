@@ -52,3 +52,24 @@
 .animate-fade-up-delay  { animation: fadeUp 0.35s ease 0.08s both; }
 .animate-fade-up-delay2 { animation: fadeUp 0.35s ease 0.16s both; }
 .animate-fade-in        { animation: fadeIn 0.25s ease both; }
+
+/* Mobile drawer animation */
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+/* Safe area for iPhone notch */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 4px);
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  input, select, textarea {
+    font-size: 16px !important; /* prevent iOS zoom */
+  }
+}

@@ -114,7 +114,7 @@ export default function Premium() {
   };
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl">
       {/* Header */}
       <div className="mb-8 animate-fade-up">
         <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
@@ -196,7 +196,7 @@ export default function Premium() {
       {/* Benefits */}
       <div className="mb-10 animate-fade-up-delay">
         <h2 className="font-display font-bold text-xl text-gray-800 mb-5">Premium-ийн давуу талууд</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {BENEFITS.map(b => (
             <div key={b.title} className="card rounded-2xl p-5 border border-surf-200">
               <div className="text-2xl mb-3">{b.icon}</div>

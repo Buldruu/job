@@ -64,7 +64,7 @@ export default function Transfer() {
   };
 
   return (
-    <div className="p-8 max-w-lg">
+    <div className="p-4 sm:p-8 max-w-lg">
       <div className="flex items-center gap-3 mb-8 animate-fade-up">
         <button onClick={() => navigate('/sanhuu')} className="w-9 h-9 btn-ghost rounded-xl flex items-center justify-center">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>

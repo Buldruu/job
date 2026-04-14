@@ -47,7 +47,7 @@ export default function Finance() {
   ];
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-8 max-w-3xl">
       <div className="flex items-center justify-between mb-8 animate-fade-up">
         <div>
           <p className="text-ink-400 text-xs uppercase tracking-wider font-semibold mb-1">Санхүү</p>

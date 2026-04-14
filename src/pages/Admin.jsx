@@ -42,7 +42,7 @@ export default function Admin() {
 
   // Not admin — show clear message instead of redirecting
   if (!profile?.isAdmin) return (
-    <div className="p-8 max-w-lg">
+    <div className="p-4 sm:p-8 max-w-lg">
       <div className="card rounded-2xl p-10 text-center border border-red-100 bg-red-50">
         <div className="text-4xl mb-4">🔒</div>
         <h2 className="text-lg font-display font-bold text-red-600 mb-2">Хандах эрхгүй</h2>
@@ -107,7 +107,7 @@ export default function Admin() {
   ];
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl">
       <div className="mb-8 animate-fade-up">
         <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
         <h1 className="text-2xl font-display font-bold text-gray-800">Админ панел</h1>

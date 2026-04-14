@@ -246,7 +246,7 @@ export default function Profile() {
   const colLabel = {jobs:'Ажил хайх', workers:'Ажилтан хайх', internships:'Дадлага', courses:'Сургалт'};
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-8 max-w-2xl">
       {/* Avatar + name */}
       <div className="flex items-center gap-5 mb-8 animate-fade-up">
         <div className="relative flex-shrink-0">
@@ -308,15 +308,15 @@ export default function Profile() {
         <form onSubmit={handleSave} className="space-y-5 animate-fade-up">
           <div className="card rounded-2xl p-5 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Үндсэн мэдээлэл</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Овог"  value={form.ovog}  onChange={v=>set('ovog',v)}  placeholder="Батбаяр"/>
               <Field label="Нэр"   value={form.ner}   onChange={v=>set('ner',v)}   placeholder="Болд"/>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Чадвар"   value={form.chadvar}   onChange={v=>set('chadvar',v)}   placeholder="React, Python..."/>
               <Field label="Туршлага" value={form.turshlaga} onChange={v=>set('turshlaga',v)} placeholder="3 жил"/>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Чиглэл</label>
                 <ProfileChiglелSelect value={form.chiglel} onChange={v=>set('chiglel',v)}/>
@@ -350,7 +350,7 @@ export default function Profile() {
             ) : (
               <p className="text-xs text-teal-600">Үнэмлэх/дипломны зураг, дугаараа оруулж хүсэлт илгээнэ. Админ баталгаажуулсны дараа "Мэргэшсэн ажилтан" хэсэгт харагдана.</p>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Зэрэг / Үнэмлэх</label>
                 <select value={form.zэрэг} onChange={e=>set('zэрэг',e.target.value)} className="input-base">
@@ -541,7 +541,7 @@ export default function Profile() {
       {/* ══ САНХҮҮ ══ */}
       {tab==='sanhuu' && (
         <div className="space-y-5 animate-fade-up">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {label:'Үлдэгдэл',       value:fmt(profile?.balance), bg:'bg-brand-50',   border:'border-brand-100', text:'text-brand-700',   icon:'💰'},
               {label:'Орлого',          value:fmt(income),           bg:'bg-emerald-50', border:'border-emerald-100',text:'text-emerald-700', icon:'📈'},
