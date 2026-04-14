@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
 import { StarDisplay, StarPicker } from '../components/RatingStars';
 
-const chiglels = ['Бүгд','IT / Технологи','Санхүү','Маркетинг','Инженер','Эрүүл мэнд','Боловсрол','Дизайн','Бусад'];
+const chiglels = ['Бүгд', 'Боловсрол', 'Урлаг, хүмүүнлэг', 'Нийгмийн шинжлэх ухаан, мэдээлэл сэтгүүл зүй', 'Бизнес, удирдлага, эрхзүй', 'Байгалийн шинжлэх ухаан, математик, статистик', 'Мэдээлэл, харилцаа холбооны технологиуд', 'Инженерчлэл, үйлдвэрлэл, барилга байгууламж', 'Хөдөө аж ахуй, ой, загасны аж ахуй, мал эмнэлзүй', 'Эрүүл мэнд, нийгмийн хамгаалал', 'Үйлчилгээ'];
 
 const COLORS = [
   {bg:'bg-blue-50',   border:'border-blue-100',   text:'text-blue-700',   avatar:'bg-blue-100 text-blue-600'},
