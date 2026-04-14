@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
 import { StarDisplay, StarPicker } from '../components/RatingStars';
 
-const chiglels = ['Бүгд', 'Боловсрол', 'Урлаг, хүмүүнлэг', 'Нийгмийн шинжлэх ухаан, мэдээлэл сэтгүүл зүй', 'Бизнес, удирдлага, эрхзүй', 'Байгалийн шинжлэх ухаан, математик, статистик', 'Мэдээлэл, харилцаа холбооны технологиуд', 'Инженерчлэл, үйлдвэрлэл, барилга байгууламж', 'Хөдөө аж ахуй, ой, загасны аж ахуй, мал эмнэлзүй', 'Эрүүл мэнд, нийгмийн хамгаалал', 'Үйлчилгээ'];
+import { CHIGLEL_MAP, ALL_SUBS, MAIN_CATS } from '../data/chiglel';
 
 const COLORS = [
   {bg:'bg-blue-50',   border:'border-blue-100',   text:'text-blue-700',   avatar:'bg-blue-100 text-blue-600'},
@@ -129,9 +129,10 @@ export default function JobList({ type }) {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
-  const [filterChiglel, setFilterChiglel] = useState('Бүгд');
-  const [search, setSearch] = useState('');       // typed value
-  const [activeSearch, setActiveSearch] = useState(''); // confirmed search
+  const [filterMain, setFilterMain] = useState('');   // main category
+  const [filterSub, setFilterSub] = useState('');    // sub category
+  const [search, setSearch] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
   const [form, setForm] = useState({});
   const [cvFile, setCvFile] = useState(null);
   const [cvParsing, setCvParsing] = useState(false);
@@ -331,20 +332,37 @@ export default function JobList({ type }) {
   };
 
   const doSearch = () => setActiveSearch(search.trim());
+  const resetFilters = () => {
+    setFilterMain(''); setFilterSub('');
+    setSearch(''); setActiveSearch('');
+    setPremiumFilter(null); setFilterSalaryMin('');
+  };
 
   const userPlan = getPlan(profile);
   const planLimits = PREMIUM_LIMITS[userPlan];
 
   const filtered = items
     .filter(i => {
-      const mc = filterChiglel === 'Бүгд' || i.chiglel === filterChiglel;
-      const s  = activeSearch.toLowerCase();
-      const textMatch = mc && (!s || Object.values(i).some(v => String(v).toLowerCase().includes(s)));
-      if (!textMatch) return false;
+      // Category filter: sub takes priority, else main matches any sub in main
+      if (filterSub) {
+        if (i.chiglel !== filterSub) return false;
+      } else if (filterMain) {
+        const subs = CHIGLEL_MAP[filterMain] || [];
+        if (!subs.includes(i.chiglel)) return false;
+      }
+      // Text search across all fields
+      const s = activeSearch.toLowerCase();
+      if (s) {
+        const allText = Object.values(i)
+          .filter(v => typeof v === 'string' || typeof v === 'number')
+          .map(v => String(v).toLowerCase())
+          .join(' ');
+        if (!allText.includes(s)) return false;
+      }
       // Premium filters
-      if (premiumFilter === 'rated' && !(i.ratings?.length > 0)) return false;
+      if (premiumFilter === 'rated'   && !(i.ratings?.length > 0)) return false;
       if (premiumFilter === 'featured' && !i.featured) return false;
-      if (premiumFilter === 'premium' && !i._isPremiumPoster) return false;
+      if (premiumFilter === 'premium'  && !i._isPremiumPoster) return false;
       if (filterSalaryMin) {
         const salNum = parseFloat(String(i[cfg.salaryKey]||'').replace(/[^0-9.]/g,''));
         if (!salNum || salNum < parseFloat(filterSalaryMin)) return false;
@@ -380,71 +398,120 @@ export default function JobList({ type }) {
       </div>
 
       {/* Search + filter */}
-      <div className="flex gap-3 mb-3 animate-fade-up-delay">
-        <div className="flex-1 relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
-            placeholder="Хайх... (Enter дарна уу)"
-            className="input-base pl-9 pr-4"
-          />
+      {/* ── Search & Filter ── */}
+      <div className="space-y-3 mb-4 animate-fade-up-delay">
+
+        {/* Search row */}
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+              type="text" value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && doSearch()}
+              placeholder="Нэр, чадвар, байршил, компани... (Enter)"
+              className="input-base pl-9 pr-4"
+            />
+          </div>
+          <button onClick={doSearch}
+            className="flex-shrink-0 bg-brand-500 hover:bg-brand-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-btn transition-all">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            Хайх
+          </button>
         </div>
-        <button
-          onClick={doSearch}
-          className="flex-shrink-0 bg-brand-500 hover:bg-brand-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-btn transition-all"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          Хайх
-        </button>
-        {cfg.fields.some(f=>f.key==='chiglel') && (
-          <select value={filterChiglel} onChange={e => { setFilterChiglel(e.target.value); setActiveSearch(''); setSearch(''); }} className="input-base w-auto">
-            {chiglels.map(c=><option key={c} value={c}>{c}</option>)}
+
+        {/* Category filter row */}
+        <div className="flex gap-2 flex-wrap items-center">
+          {/* Main category */}
+          <select value={filterMain}
+            onChange={e => { setFilterMain(e.target.value); setFilterSub(''); }}
+            className="input-base text-sm py-2 w-auto max-w-xs">
+            <option value="">🗂 Бүх чиглэл</option>
+            {MAIN_CATS.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
           </select>
+
+          {/* Sub category — shown only if main is selected */}
+          {filterMain && CHIGLEL_MAP[filterMain]?.length > 0 && (
+            <select value={filterSub} onChange={e => setFilterSub(e.target.value)}
+              className="input-base text-sm py-2 w-auto max-w-xs border-brand-300 bg-brand-50">
+              <option value="">— Бүх дэд чиглэл</option>
+              {CHIGLEL_MAP[filterMain].map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Active filter tags */}
+          {(filterMain || filterSub || activeSearch) && (
+            <button onClick={resetFilters}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-400 border border-gray-200 px-2.5 py-1.5 rounded-full transition">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Арилгах
+            </button>
+          )}
+        </div>
+
+        {/* Active filter tags display */}
+        {(filterMain || filterSub || activeSearch) && (
+          <div className="flex gap-2 flex-wrap items-center">
+            {activeSearch && (
+              <span className="text-xs bg-brand-50 border border-brand-200 text-brand-600 px-2.5 py-1 rounded-full flex items-center gap-1">
+                🔍 "{activeSearch}"
+                <button onClick={() => { setSearch(''); setActiveSearch(''); }} className="hover:text-red-400 ml-1">✕</button>
+              </span>
+            )}
+            {filterMain && !filterSub && (
+              <span className="text-xs bg-surf-100 border border-surf-200 text-gray-600 px-2.5 py-1 rounded-full flex items-center gap-1">
+                🗂 {filterMain.split('. ')[1]}
+                <button onClick={() => { setFilterMain(''); setFilterSub(''); }} className="hover:text-red-400 ml-1">✕</button>
+              </span>
+            )}
+            {filterSub && (
+              <span className="text-xs bg-brand-50 border border-brand-200 text-brand-600 px-2.5 py-1 rounded-full flex items-center gap-1">
+                📂 {filterSub}
+                <button onClick={() => setFilterSub('')} className="hover:text-red-400 ml-1">✕</button>
+              </span>
+            )}
+            <span className="text-xs text-gray-400">{filtered.length} үр дүн</span>
+          </div>
+        )}
+
+        {/* Premium filters */}
+        {isPremiumActive(profile) && (
+          <div className="flex gap-2 flex-wrap items-center pt-1 border-t border-surf-100">
+            <span className="text-xs text-violet-500 font-bold">💎 Premium:</span>
+            {[
+              { key:'rated',   label:'⭐ Үнэлэгдсэн' },
+              { key:'featured',label:'🔥 Онцлох'     },
+              { key:'premium', label:'💎 Premium'     },
+            ].map(f => (
+              <button key={f.key}
+                onClick={() => setPremiumFilter(p => p===f.key ? null : f.key)}
+                className={`text-xs px-3 py-1 rounded-full border font-medium transition-all ${
+                  premiumFilter===f.key
+                    ? 'bg-violet-500 border-violet-500 text-white'
+                    : 'bg-violet-50 border-violet-200 text-violet-600 hover:bg-violet-100'
+                }`}>
+                {f.label}
+              </button>
+            ))}
+            {cfg.salaryKey && (
+              <input type="number" value={filterSalaryMin}
+                onChange={e => setFilterSalaryMin(e.target.value)}
+                placeholder="Доод цалин ₮"
+                className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700 w-32 focus:outline-none focus:border-violet-400"/>
+            )}
+          </div>
         )}
       </div>
-
-      {/* Premium advanced filters */}
-      {isPremiumActive(profile) && (
-        <div className="flex gap-2 mb-4 flex-wrap animate-fade-up-delay">
-          <span className="text-xs text-violet-500 font-bold flex items-center gap-1 mr-1">
-            💎 Premium хайлт:
-          </span>
-          {[
-            { key:'rated',    label:'⭐ Үнэлэгдсэн' },
-            { key:'featured', label:'🔥 Онцлох' },
-            { key:'premium',  label:'💎 Premium' },
-          ].map(f => (
-            <button key={f.key}
-              onClick={() => setPremiumFilter(p => p===f.key ? null : f.key)}
-              className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
-                premiumFilter===f.key
-                  ? 'bg-violet-500 border-violet-500 text-white'
-                  : 'bg-violet-50 border-violet-200 text-violet-600 hover:bg-violet-100'
-              }`}>
-              {f.label}
-            </button>
-          ))}
-          {(premiumFilter || filterSalaryMin) && (
-            <button onClick={() => { setPremiumFilter(null); setFilterSalaryMin(''); }}
-              className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 transition">
-              ✕ Арилгах
-            </button>
-          )}
-          {cfg.salaryKey && (
-            <input type="number" value={filterSalaryMin}
-              onChange={e=>setFilterSalaryMin(e.target.value)}
-              placeholder="Доод цалин ₮"
-              className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700 w-36 focus:outline-none focus:border-violet-400"/>
-          )}
-        </div>
-      )}
 
       {/* List */}
       {loading ? (
@@ -455,12 +522,12 @@ export default function JobList({ type }) {
         <div className="card rounded-2xl p-12 text-center text-gray-300 animate-fade-up-delay">
           <div className="text-4xl mb-3">📭</div>
           <p className="text-sm">
-            {activeSearch ? `"${activeSearch}" хайлтад тохирох зар байхгүй` : 'Зар байхгүй байна'}
+            {(activeSearch || filterMain || filterSub) ? `Хайлтын шүүлтүүрт тохирох зар байхгүй` : 'Зар байхгүй байна'}
           </p>
-          {activeSearch && (
-            <button onClick={() => { setSearch(''); setActiveSearch(''); }}
+          {(activeSearch || filterMain || filterSub) && (
+            <button onClick={resetFilters}
               className="mt-3 text-xs text-brand-500 hover:underline">
-              Хайлтыг арилгах
+              Шүүлтүүр арилгах
             </button>
           )}
         </div>
@@ -701,10 +768,7 @@ export default function JobList({ type }) {
                   <textarea value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                     required={f.required} rows={3} className="input-base resize-none"/>
                 ) : f.key==='chiglel' ? (
-                  <select value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))} className="input-base">
-                    <option value="">Сонгоно уу</option>
-                    {chiglels.slice(1).map(c=><option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <ChiglелSelect value={form[f.key]||''} onChange={v=>setForm(p=>({...p,[f.key]:v}))}/>
                 ) : (
                   <input type="text" value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                     required={f.required} className="input-base"/>
@@ -750,6 +814,52 @@ export default function JobList({ type }) {
             </button>
           </form>
         </Modal>
+      )}
+    </div>
+  );
+}
+
+function ChiglелSelect({ value, onChange }) {
+  const [selMain, setSelMain] = useState(() => {
+    if (!value) return '';
+    for (const [m, subs] of Object.entries(CHIGLEL_MAP)) {
+      if (subs.includes(value)) return m;
+    }
+    return '';
+  });
+
+  const handleMain = (m) => {
+    setSelMain(m);
+    onChange(''); // reset sub when main changes
+  };
+
+  const handleSub = (s) => {
+    onChange(s);
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Main category */}
+      <select value={selMain} onChange={e => handleMain(e.target.value)} className="input-base">
+        <option value="">Ерөнхий чиглэл сонгоно уу</option>
+        {MAIN_CATS.map(m => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+      {/* Sub category */}
+      {selMain && CHIGLEL_MAP[selMain]?.length > 0 && (
+        <select value={value} onChange={e => handleSub(e.target.value)} className="input-base border-brand-300 bg-brand-50">
+          <option value="">Дэд чиглэл сонгоно уу</option>
+          {CHIGLEL_MAP[selMain].map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      )}
+      {value && (
+        <div className="text-xs text-brand-600 bg-brand-50 border border-brand-100 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5">
+          📂 {value}
+          <button type="button" onClick={() => { onChange(''); setSelMain(''); }} className="hover:text-red-400 ml-1">✕</button>
+        </div>
       )}
     </div>
   );

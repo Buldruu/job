@@ -5,20 +5,10 @@ import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { StarDisplay } from '../components/RatingStars';
+import { CHIGLEL_MAP, MAIN_CATS } from '../data/chiglel';
 import mammoth from 'mammoth';
 
-const chiglels = [
-  'Боловсрол',
-  'Урлаг, хүмүүнлэг',
-  'Нийгмийн шинжлэх ухаан, мэдээлэл сэтгүүл зүй',
-  'Бизнес, удирдлага, эрхзүй',
-  'Байгалийн шинжлэх ухаан, математик, статистик',
-  'Мэдээлэл, харилцаа холбооны технологиуд',
-  'Инженерчлэл, үйлдвэрлэл, барилга байгууламж',
-  'Хөдөө аж ахуй, ой, загасны аж ахуй, мал эмнэлзүй',
-  'Эрүүл мэнд, нийгмийн хамгаалал',
-  'Үйлчилгээ',
-];
+
 const DEGREES  = ['Мастер','Доктор','Мэргэжлийн үнэмлэх'];
 const fmt = (n) => Number(n||0).toLocaleString('mn-MN') + '₮';
 const avgRating = (ratings=[]) => {
@@ -329,10 +319,7 @@ export default function Profile() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Чиглэл</label>
-                <select value={form.chiglel} onChange={e=>set('chiglel',e.target.value)} className="input-base">
-                  <option value="">Сонгоно уу</option>
-                  {chiglels.map(c=><option key={c} value={c}>{c}</option>)}
-                </select>
+                <ProfileChiglелSelect value={form.chiglel} onChange={v=>set('chiglel',v)}/>
               </div>
               <Field label="Хүссэн цалин (₮)" value={form.tsalin} onChange={v=>set('tsalin',v)} placeholder="1,500,000"/>
             </div>
@@ -616,6 +603,37 @@ export default function Profile() {
               </div>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfileChiglелSelect({ value, onChange }) {
+  const [selMain, setSelMain] = useState(() => {
+    if (!value) return '';
+    for (const [m, subs] of Object.entries(CHIGLEL_MAP)) {
+      if (subs.includes(value)) return m;
+    }
+    return '';
+  });
+  const handleMain = (m) => { setSelMain(m); onChange(''); };
+  return (
+    <div className="space-y-2">
+      <select value={selMain} onChange={e => handleMain(e.target.value)} className="input-base">
+        <option value="">Ерөнхий чиглэл сонгоно уу</option>
+        {MAIN_CATS.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+      {selMain && CHIGLEL_MAP[selMain]?.length > 0 && (
+        <select value={value} onChange={e => onChange(e.target.value)} className="input-base border-brand-300 bg-brand-50">
+          <option value="">Дэд чиглэл сонгоно уу</option>
+          {CHIGLEL_MAP[selMain].map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      )}
+      {value && (
+        <div className="text-xs text-brand-600 bg-brand-50 border border-brand-100 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5">
+          📂 {value}
+          <button type="button" onClick={() => { onChange(''); setSelMain(''); }} className="hover:text-red-400 ml-1">✕</button>
         </div>
       )}
     </div>
