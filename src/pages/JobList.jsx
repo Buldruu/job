@@ -100,6 +100,26 @@ const avgRating = (ratings=[]) => {
   return ratings.reduce((s,r)=>s+r.stars, 0) / ratings.length;
 };
 
+// Premium limits per plan
+const PREMIUM_LIMITS = {
+  free:     { posts: 3,  featured: 0  },
+  basic:    { posts: 10, featured: 5  },
+  pro:      { posts: 30, featured: 20 },
+  business: { posts: 999,featured: 999},
+};
+
+const isPremiumActive = (profile) => {
+  if (!profile?.premiumPlan || profile.premiumPlan === 'free') return false;
+  const until = profile.premiumUntil?.toDate?.() || profile.premiumUntil;
+  if (!until) return false;
+  return new Date(until) > new Date();
+};
+
+const getPlan = (profile) => {
+  if (!isPremiumActive(profile)) return 'free';
+  return profile.premiumPlan || 'free';
+};
+
 export default function JobList({ type }) {
   const cfg = configs[type];
   const { user, profile, refreshProfile } = useAuth();
@@ -118,15 +138,55 @@ export default function JobList({ type }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [featuring, setFeaturing] = useState(false);
-  const [myRating, setMyRating] = useState(0);
+  const [myRating, setMyRating] = useState(0);       // confirmed rating
+  const [pendingRating, setPendingRating] = useState(0); // hover/pick before confirm
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratedItemId, setRatedItemId] = useState(null); // track which item we rated
+  const [editingRating, setEditingRating] = useState(false); // unlock to change
+  const [premiumAds, setPremiumAds] = useState([]);
+  const [premiumFilter, setPremiumFilter] = useState(null); // 'rated'|'featured'|'premium'
+  const [filterSalaryMin, setFilterSalaryMin] = useState('');
+
+  // Load business ads
+  useEffect(() => {
+    const { query: aq, collection: ac, where: aw, onSnapshot: ao } = {
+      query, collection: collection, where: null, onSnapshot
+    };
+    // Simple: watch all users, filter client-side
+    const unsubAds = onSnapshot(query(collection(db,'users')), snap => {
+      const now = new Date();
+      const ads = snap.docs
+        .map(d => ({id:d.id,...d.data()}))
+        .filter(u => {
+          if (u.premiumPlan !== 'business') return false;
+          const until = u.premiumUntil?.toDate?.() || (u.premiumUntil && new Date(u.premiumUntil));
+          return until && until > now && u.ad?.title;
+        });
+      setPremiumAds(ads);
+    });
+    return unsubAds;
+  }, []);
 
   useEffect(() => {
     setItems([]); setLoading(true);
     const q = query(collection(db, cfg.collection), orderBy('createdAt','desc'));
-    return onSnapshot(q, snap => {
-      setItems(snap.docs.map(d=>({id:d.id,...d.data()})));
+    return onSnapshot(q, async snap => {
+      // Load all items, then mark premium posters
+      const rawItems = snap.docs.map(d=>({id:d.id,...d.data()}));
+      // Get unique poster UIDs
+      const uids = [...new Set(rawItems.map(i=>i.uid).filter(Boolean))];
+      // Fetch poster profiles to check premium
+      const profileMap = {};
+      await Promise.all(uids.map(async uid => {
+        try {
+          const s = await getDoc(doc(db,'users',uid));
+          if (s.exists()) profileMap[uid] = s.data();
+        } catch(e) {}
+      }));
+      setItems(rawItems.map(item => ({
+        ...item,
+        _isPremiumPoster: profileMap[item.uid] ? isPremiumActive(profileMap[item.uid]) : false,
+      })));
       setLoading(false);
     });
   }, [type]);
@@ -134,9 +194,10 @@ export default function JobList({ type }) {
   // Load my existing rating only when opening a NEW item
   useEffect(() => {
     if (!selected || !user) return;
-    if (selected.id === ratedItemId) return; // don't reset after submitting rating
     const existing = (selected.ratings||[]).find(r=>r.uid===user.uid);
     setMyRating(existing?.stars || 0);
+    setPendingRating(existing?.stars || 0);
+    setEditingRating(false);
   }, [selected?.id, user]);
 
   // CV file → extract text via mammoth
@@ -163,6 +224,16 @@ export default function JobList({ type }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+    // Check post limit
+    const myPosts = items.filter(i => i.uid === user?.uid);
+    const plan = getPlan(profile);
+    const limit = PREMIUM_LIMITS[plan].posts;
+    if (myPosts.length >= limit) {
+      alert(plan === 'free'
+        ? `Үнэгүй багцад ${PREMIUM_LIMITS.free.posts} зар нэмэх боломжтой.\nИлүү зар нэмэхийн тулд Premium авна уу.`
+        : `${plan} багцад ${limit} зар нэмэх боломжтой.`);
+      return;
+    }
     setSaving(true);
     try {
       // 1. Firestore-d shuud hagalna
@@ -233,8 +304,6 @@ export default function JobList({ type }) {
 
   const submitRating = async (stars) => {
     if (!selected || !user || ratingSubmitting) return;
-    setMyRating(stars);
-    setRatedItemId(selected.id); // mark so useEffect won't reset
     setRatingSubmitting(true);
     const itemRef = doc(db, cfg.collection, selected.id);
     // Remove old rating then add new
@@ -246,6 +315,10 @@ export default function JobList({ type }) {
       const filtered = (s.ratings||[]).filter(r=>r.uid!==user.uid);
       return { ...s, ratings: [...filtered, newRating] };
     });
+    setMyRating(stars);
+    setEditingRating(false);
+    setPendingRating(stars);
+    setRatedItemId(selected.id);
     setRatingSubmitting(false);
   };
 
@@ -259,11 +332,35 @@ export default function JobList({ type }) {
 
   const doSearch = () => setActiveSearch(search.trim());
 
-  const filtered = items.filter(i => {
-    const mc = filterChiglel === 'Бүгд' || i.chiglel === filterChiglel;
-    const s  = activeSearch.toLowerCase();
-    return mc && (!s || Object.values(i).some(v => String(v).toLowerCase().includes(s)));
-  });
+  const userPlan = getPlan(profile);
+  const planLimits = PREMIUM_LIMITS[userPlan];
+
+  const filtered = items
+    .filter(i => {
+      const mc = filterChiglel === 'Бүгд' || i.chiglel === filterChiglel;
+      const s  = activeSearch.toLowerCase();
+      const textMatch = mc && (!s || Object.values(i).some(v => String(v).toLowerCase().includes(s)));
+      if (!textMatch) return false;
+      // Premium filters
+      if (premiumFilter === 'rated' && !(i.ratings?.length > 0)) return false;
+      if (premiumFilter === 'featured' && !i.featured) return false;
+      if (premiumFilter === 'premium' && !i._isPremiumPoster) return false;
+      if (filterSalaryMin) {
+        const salNum = parseFloat(String(i[cfg.salaryKey]||'').replace(/[^0-9.]/g,''));
+        if (!salNum || salNum < parseFloat(filterSalaryMin)) return false;
+      }
+      return true;
+    })
+    // Sort: premium poster's posts → featured → newest
+    .sort((a, b) => {
+      const aP = a._isPremiumPoster ? 1 : 0;
+      const bP = b._isPremiumPoster ? 1 : 0;
+      if (bP !== aP) return bP - aP;
+      const aF = a.featured ? 1 : 0;
+      const bF = b.featured ? 1 : 0;
+      if (bF !== aF) return bF - aF;
+      return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+    });
 
   return (
     <div className="p-8 max-w-4xl">
@@ -283,7 +380,7 @@ export default function JobList({ type }) {
       </div>
 
       {/* Search + filter */}
-      <div className="flex gap-3 mb-6 animate-fade-up-delay">
+      <div className="flex gap-3 mb-3 animate-fade-up-delay">
         <div className="flex-1 relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -313,6 +410,42 @@ export default function JobList({ type }) {
         )}
       </div>
 
+      {/* Premium advanced filters */}
+      {isPremiumActive(profile) && (
+        <div className="flex gap-2 mb-4 flex-wrap animate-fade-up-delay">
+          <span className="text-xs text-violet-500 font-bold flex items-center gap-1 mr-1">
+            💎 Premium хайлт:
+          </span>
+          {[
+            { key:'rated',    label:'⭐ Үнэлэгдсэн' },
+            { key:'featured', label:'🔥 Онцлох' },
+            { key:'premium',  label:'💎 Premium' },
+          ].map(f => (
+            <button key={f.key}
+              onClick={() => setPremiumFilter(p => p===f.key ? null : f.key)}
+              className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
+                premiumFilter===f.key
+                  ? 'bg-violet-500 border-violet-500 text-white'
+                  : 'bg-violet-50 border-violet-200 text-violet-600 hover:bg-violet-100'
+              }`}>
+              {f.label}
+            </button>
+          ))}
+          {(premiumFilter || filterSalaryMin) && (
+            <button onClick={() => { setPremiumFilter(null); setFilterSalaryMin(''); }}
+              className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 transition">
+              ✕ Арилгах
+            </button>
+          )}
+          {cfg.salaryKey && (
+            <input type="number" value={filterSalaryMin}
+              onChange={e=>setFilterSalaryMin(e.target.value)}
+              placeholder="Доод цалин ₮"
+              className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700 w-36 focus:outline-none focus:border-violet-400"/>
+          )}
+        </div>
+      )}
+
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-16">
@@ -332,6 +465,23 @@ export default function JobList({ type }) {
           )}
         </div>
       ) : (
+        <>
+        {/* Premium Business ads */}
+        {premiumAds.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {premiumAds.slice(0,2).map(ad => (
+              <div key={ad.id} className="card rounded-xl px-5 py-3 border border-amber-100 bg-amber-50 flex items-center gap-3">
+                <span className="text-xs text-amber-600 font-bold bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full flex-shrink-0">📢 Сурталчилгаа</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-amber-800 text-sm truncate">{ad.ad.title}</div>
+                  {ad.ad.description && <div className="text-amber-600 text-xs truncate">{ad.ad.description}</div>}
+                </div>
+                {ad.ad.contact && <div className="text-xs text-amber-700 font-medium flex-shrink-0">{ad.ad.contact}</div>}
+                {ad.ad.link && <a href={ad.ad.link} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="text-xs text-brand-500 font-bold hover:text-brand-700 flex-shrink-0 ml-2">→ Харах</a>}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up-delay">
           {filtered.map((item, idx) => {
             const c = COLORS[idx % COLORS.length];
@@ -366,13 +516,17 @@ export default function JobList({ type }) {
                   </svg>
                   <span className="truncate">{item.hayg}</span>
                 </div>}
-                {item.featured && <div className="mt-1"><span className="text-xs text-amber-600 font-medium">⭐ Онцлох</span></div>}
-                {item.uid===user?.uid && <div className="mt-1"><span className="text-xs text-brand-500 font-medium">● Миний зар</span></div>}
+                <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                  {item.featured && <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">⭐ Онцлох</span>}
+                  {item._isPremiumPoster && <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full font-medium">💎 Premium</span>}
+                  {item.uid===user?.uid && <span className="text-xs text-brand-500 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full font-medium">● Миний зар</span>}
+                </div>
                 <div className="text-gray-300 text-xs mt-2">{item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')||''}</div>
               </button>
             );
           })}
         </div>
+        </>
       )}
 
       {/* Detail modal */}
@@ -421,26 +575,48 @@ export default function JobList({ type }) {
               </div>
               {selected.uid !== user?.uid && (
                 <div>
-                  {myRating > 0 ? (
+                  {myRating > 0 && !editingRating ? (
+                    // LOCKED — showing confirmed rating
                     <div>
                       <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Таны үнэлгээ</div>
                       <div className="flex items-center gap-2">
                         <StarDisplay rating={myRating} size="lg"/>
-                        {ratingSubmitting && (
-                          <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"/>
-                        )}
                         <button
-                          onClick={e => { e.stopPropagation(); setMyRating(0); }}
-                          className="text-xs text-gray-400 hover:text-red-400 transition underline ml-1"
+                          onClick={e => { e.stopPropagation(); setEditingRating(true); setPendingRating(myRating); }}
+                          className="text-xs text-gray-400 hover:text-brand-500 transition underline ml-1"
                         >
                           өөрчлөх
                         </button>
                       </div>
                     </div>
                   ) : (
+                    // PICKER — choose stars then confirm
                     <div>
-                      <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Та үнэлэх</div>
-                      <StarPicker value={myRating} onChange={submitRating}/>
+                      <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">
+                        {editingRating ? 'Үнэлгээ өөрчлөх' : 'Та үнэлэх'}
+                      </div>
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <StarPicker value={pendingRating} onChange={v => setPendingRating(v)}/>
+                        {pendingRating > 0 && (
+                          <button
+                            disabled={ratingSubmitting}
+                            onClick={e => { e.stopPropagation(); submitRating(pendingRating); }}
+                            className="ml-1 text-xs bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-white font-bold px-3 py-1 rounded-lg transition flex items-center gap-1"
+                          >
+                            {ratingSubmitting
+                              ? <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin"/>
+                              : '✓ Үнэлэх'}
+                          </button>
+                        )}
+                        {editingRating && (
+                          <button
+                            onClick={e => { e.stopPropagation(); setEditingRating(false); setPendingRating(myRating); }}
+                            className="text-xs text-gray-400 hover:text-gray-600 transition underline"
+                          >
+                            болих
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -484,6 +660,9 @@ export default function JobList({ type }) {
                     {selectedOwner.tsalin && <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">{selectedOwner.tsalin}₮</span>}
                   </div>
                   {selectedOwner.chadvar && <div className="mt-1.5 text-xs text-gray-500">{selectedOwner.chadvar}</div>}
+                  {selected._isPremiumPoster && (
+                    <span className="inline-block mt-1.5 text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full font-medium">💎 Premium гишүүн</span>
+                  )}
                   {selected.utas && (
                     <div className="mt-1.5 flex items-center gap-1 text-xs text-brand-600 font-medium">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

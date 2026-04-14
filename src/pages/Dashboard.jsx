@@ -8,7 +8,7 @@ import { StarDisplay } from '../components/RatingStars';
 const quickLinks = [
   { to:'/ajil',    label:'Ажил хайх',    desc:'Нийтлэгдсэн ажлын зарууд', icon:'💼', bg:'bg-blue-50',   border:'border-blue-100',   text:'text-blue-700'   },
   { to:'/ajiltan', label:'Ажилтан хайх', desc:'Мэргэжилтэн олох',          icon:'👥', bg:'bg-violet-50', border:'border-violet-100', text:'text-violet-700' },
-  { to:'/dadlaga', label:'Дадлага',       desc:'Туршлага олох боломж',      icon:'📚', bg:'bg-emerald-50',border:'border-emerald-100',text:'text-emerald-700'},
+  { to:'/premium', label:'Premium',        desc:'Апп-ын дэвшилтэт боломжууд', icon:'💎', bg:'bg-violet-50', border:'border-violet-100', text:'text-violet-700'},
   { to:'/surgalt', label:'Сургалт',       desc:'Мэргэжил дээшлүүлэх',      icon:'🎓', bg:'bg-amber-50',  border:'border-amber-100',  text:'text-amber-700'  },
   { to:'/mergejilten', label:'Мэргэшсэн ажилтан', desc:'Баталгаажсан мэргэжилтнүүд', icon:'🏅', bg:'bg-teal-50', border:'border-teal-100', text:'text-teal-700' },
 ];
