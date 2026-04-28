@@ -5,6 +5,7 @@ import { auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import BrandModal from './BrandModal';
 import HaGaLogo from './HaGaLogo';
+import AIChat from './AIChat';
 
 const navItems = [
   { to: '/',           label: 'Нүүр',          short: 'Нүүр',      icon: (
@@ -249,6 +250,7 @@ export default function Layout() {
       )}
 
       {showBrand && <BrandModal onClose={() => setShowBrand(false)}/>}
+      <AIChat/>
     </div>
   );
 }
