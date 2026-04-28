@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   collection, query, onSnapshot, orderBy,
-  where, doc, updateDoc, serverTimestamp
+  where, doc, updateDoc, serverTimestamp, setDoc, getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -76,6 +76,7 @@ export default function Admin() {
     { key: 'users',  label: 'Хэрэглэгч', count: users.length },
     { key: 'online', label: 'Онлайн',    count: online.length },
     { key: 'verify', label: 'Баталгаажуулалт', count: pendingVerify.length, badge: pendingVerify.length > 0 },
+    { key: 'ai',     label: '🤖 AI', count: null },
   ];
 
   return (
@@ -303,6 +304,9 @@ export default function Admin() {
         </div>
       )}
 
+      {/* ── AI SETTINGS TAB ── */}
+      {tab === 'ai' && <AISettingsTab/>}
+
       {/* ── USER DETAIL MODAL (full screen on mobile) ── */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -398,6 +402,151 @@ function Avatar({ u, size = 'sm' }) {
       {u?.photoURL
         ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/>
         : <span className={`font-bold text-brand-600`}>{initial}</span>}
+    </div>
+  );
+}
+
+/* ── AI Settings Tab ── */
+function AISettingsTab() {
+  const [key, setKey] = useState('');
+  const [maskedKey, setMaskedKey] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [hasKey, setHasKey] = useState(false);
+
+  useEffect(() => {
+    import('firebase/firestore').then(({ doc, getDoc }) => {
+      getDoc(doc(db, 'settings', 'ai')).then(snap => {
+        if (snap.exists() && snap.data().geminiKey) {
+          const k = snap.data().geminiKey;
+          setHasKey(true);
+          setMaskedKey(k.slice(0,8) + '••••••••••••••' + k.slice(-4));
+        }
+      });
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!key.trim()) return;
+    setSaving(true);
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'settings', 'ai'), {
+        geminiKey: key.trim(),
+        updatedAt: new Date(),
+      });
+      setHasKey(true);
+      setMaskedKey(key.slice(0,8) + '••••••••••••••' + key.slice(-4));
+      setKey('');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch(e) { alert('Алдаа: ' + e.message); }
+    setSaving(false);
+  };
+
+  const handleRemove = async () => {
+    if (!window.confirm('API түлхүүрийг устгах уу? AI туслах идэвхгүй болно.')) return;
+    try {
+      const { doc, deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'settings', 'ai'));
+      setHasKey(false);
+      setMaskedKey('');
+    } catch(e) { alert('Алдаа'); }
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-up-delay">
+      <div className="card rounded-2xl p-6 border border-brand-100">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 bg-brand-100 rounded-2xl flex items-center justify-center text-xl">🤖</div>
+          <div>
+            <h2 className="font-display font-bold text-gray-800">AI Туслахын тохиргоо</h2>
+            <p className="text-xs text-gray-400">Google Gemini API — бүх хэрэглэгч нэг түлхүүр ашиглана</p>
+          </div>
+        </div>
+
+        {/* Current status */}
+        <div className={`rounded-xl px-4 py-3 mb-5 flex items-center gap-3 ${
+          hasKey ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'
+        }`}>
+          <span className={`w-2.5 h-2.5 rounded-full ${hasKey ? 'bg-emerald-400' : 'bg-amber-400'} flex-shrink-0`}/>
+          <div className="flex-1">
+            <div className={`text-sm font-semibold ${hasKey ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {hasKey ? '✅ AI туслах идэвхтэй' : '⚠️ API түлхүүр тохируулаагүй'}
+            </div>
+            {hasKey && maskedKey && (
+              <div className="text-xs text-emerald-600 font-mono mt-0.5">{maskedKey}</div>
+            )}
+          </div>
+          {hasKey && (
+            <button onClick={handleRemove}
+              className="text-xs text-red-400 hover:text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition font-medium">
+              Устгах
+            </button>
+          )}
+        </div>
+
+        {/* Key input */}
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {hasKey ? 'API түлхүүр солих' : 'Google Gemini API түлхүүр'}
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={key}
+              onChange={e => setKey(e.target.value)}
+              placeholder="AIzaSy..."
+              className="input-base flex-1 font-mono text-sm"
+            />
+            <button onClick={handleSave} disabled={saving || !key.trim()}
+              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 flex-shrink-0">
+              {saving
+                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                : '💾 Хадгалах'}
+            </button>
+          </div>
+          {saved && (
+            <div className="text-sm text-emerald-600 flex items-center gap-2">
+              ✅ API түлхүүр амжилттай хадгалагдлаа. Бүх хэрэглэгч ашиглах боломжтой боллоо.
+            </div>
+          )}
+        </div>
+
+        {/* How to get key */}
+        <div className="mt-5 bg-surf-50 border border-surf-200 rounded-xl p-4">
+          <div className="text-xs font-semibold text-gray-600 mb-2">🔑 API түлхүүр хэрхэн авах:</div>
+          <ol className="space-y-1 text-xs text-gray-500">
+            <li>1. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+              className="text-brand-500 hover:underline font-medium">aistudio.google.com/app/apikey</a> руу орно</li>
+            <li>2. Google account-аараа нэвтэрнэ</li>
+            <li>3. <strong className="text-gray-700">"Create API key"</strong> дарна</li>
+            <li>4. <code className="bg-white border border-surf-200 px-1 rounded">AIzaSy...</code> эхэлсэн түлхүүрийг хуулна</li>
+            <li>5. Дээрх талбарт буулгаж "Хадгалах" дарна</li>
+          </ol>
+          <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+            💡 Gemini 1.5 Flash: минутанд 15 хүсэлт, өдөрт 1,500 хүсэлт <strong>үнэгүй</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Usage info */}
+      <div className="card rounded-2xl p-5 border border-surf-200">
+        <h3 className="font-semibold text-gray-700 mb-3 text-sm">AI туслахын мэдлэгийн сан</h3>
+        <div className="space-y-2 text-xs text-gray-500">
+          {[
+            'Платформын бүх хэсэг — ажил хайх, зар нэмэх, санхүү, premium',
+            'Мэргэшсэн ажилтан болох процесс',
+            'Барилттай шилжүүлэг (escrow) систем',
+            'Хайлт болон шүүлтүүрийн заавар',
+            'Бүртгэл, нэвтрэлтийн тайлбар',
+          ].map(t => (
+            <div key={t} className="flex items-start gap-2">
+              <span className="text-emerald-500 flex-shrink-0">✓</span>{t}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
