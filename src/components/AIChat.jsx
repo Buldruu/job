@@ -48,7 +48,13 @@ const SYSTEM_PROMPT = `Та HaGA платформын AI туслах юм. HaGA
 
 Та хэрэглэгчийн асуултанд монгол хэлээр, найрсаг, товч тодорхой хариул.`;
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+// Gemini API endpoints - try in order
+const GEMINI_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest', 
+  'gemini-pro',
+];
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export default function AIChat() {
   const { profile } = useAuth();
@@ -125,22 +131,26 @@ export default function AIChat() {
     }
 
     try {
+      // Include system context in contents (works with all Gemini models)
+      const systemTurn = [
+        { role: 'user', parts: [{ text: `Дараах зааврыг дагана уу:\n\n${SYSTEM_PROMPT}\n\nОй тойм хийж, бэлэн гэж хэлнэ үү.` }] },
+        { role: 'model', parts: [{ text: 'Ойлголоо. Би HaGA платформын AI туслах болж бэлэн байна.' }] },
+      ];
+
       const body = {
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [
+          ...systemTurn,
           ...validHistory,
           { role: 'user', parts: [{ text: trimmed }] },
         ],
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 600,
+          stopSequences: [],
         },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-        ],
       };
 
+      const GEMINI_URL = `${GEMINI_BASE}/${GEMINI_MODELS[0]}:generateContent`;
       const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,16 +158,35 @@ export default function AIChat() {
       });
 
       const data = await res.json();
+      console.log('Gemini response:', JSON.stringify(data).slice(0, 500));
 
       if (!res.ok) {
         const errMsg = data?.error?.message || `HTTP ${res.status}`;
         throw new Error(errMsg);
       }
 
+      // Handle different response structures
+      const candidate = data?.candidates?.[0];
+      
+      // Check if blocked by safety
+      if (candidate?.finishReason === 'SAFETY' || candidate?.finishReason === 'RECITATION') {
+        setMsgs(m => [...m, { role: 'ai', text: 'Уучлаарай, энэ асуулт дээр хариулах боломжгүй байна.' }]);
+        setLoading(false);
+        return;
+      }
+
+      // Extract text from various possible structures
       const reply =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        data?.candidates?.[0]?.output ||
-        'Хариу авч чадсангүй.';
+        candidate?.content?.parts?.[0]?.text ||
+        candidate?.content?.parts?.[0]?.inlineData?.data ||
+        candidate?.output ||
+        data?.text ||
+        null;
+
+      if (!reply) {
+        console.error('Could not find text in response:', data);
+        throw new Error('Хоосон хариу ирлээ');
+      }
 
       setMsgs(m => [...m, { role: 'ai', text: reply }]);
     } catch (err) {
