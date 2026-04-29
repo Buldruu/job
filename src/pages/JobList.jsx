@@ -44,21 +44,41 @@ const configs = {
   ajiltan: {
     title:'Ажилтан хайх', addLabel:'Зар нэмэх', addTitle:'Ажлын зар оруулах',
     collection:'workers',
-    fields:[
+    // Байгуулга fields
+    fieldsOrg:[
       {key:'zarlagch_turul',    label:'Зарлагчийн төрөл',   required:true, options:['Байгуулга','Хувь хүн']},
-      {key:'baiguulgiin_ner',   label:'Байгууллага/Нэр',   required:true},
-      {key:'alban_tushaal',     label:'Албан тушаал',      required:true},
-      {key:'chadvar',           label:'Чадвар / Мэдлэг',   required:false},
-      {key:'turshlaga',         label:'Туршлага',          required:false},
-      {key:'tsalin',            label:'Цалин (₮)',         required:false},
-      {key:'chiglel',           label:'Чиглэл',            required:false},
-      {key:'hayg',              label:'Хаяг',              required:false, isAddress:true},
-      {key:'ajilchinaas_huseh', label:'Ажилтнаас хүсэх',  required:false, textarea:true},
+      {key:'baiguulgiin_ner',   label:'Байгууллагын нэр',   required:true},
+      {key:'alban_tushaal',     label:'Албан тушаал',       required:true},
+      {key:'chadvar',           label:'Чадвар / Мэдлэг',    required:false},
+      {key:'turshlaga',         label:'Туршлага шаардлага', required:false},
+      {key:'tsalin',            label:'Цалин (₮/сар)',      required:false},
+      {key:'chiglel',           label:'Чиглэл',             required:false},
+      {key:'hayg',              label:'Хаяг',               required:false, isAddress:true},
+      {key:'ajilchinaas_huseh', label:'Ажилтнаас хүсэх',   required:false, textarea:true},
       {key:'utas',              label:'Холбоо барих утас',  required:false},
-      {key:'nemelt',            label:'Нэмэлт',            required:false, textarea:true},
+      {key:'nemelt',            label:'Нэмэлт',             required:false, textarea:true},
     ],
-    cardTitle:(d)=>d.alban_tushaal||'Ажлын зар',
-    cardSub:(d)=>d.baiguulgiin_ner, salaryKey:'tsalin',
+    // Хувь хүн fields — зураг, богино бичлэг, өөрийн мэдээлэл
+    fieldsPerson:[
+      {key:'zarlagch_turul',    label:'Зарлагчийн төрөл',   required:true, options:['Байгуулга','Хувь хүн']},
+      {key:'ner',               label:'Нэр',                required:true},
+      {key:'photo_url',         label:'Зураг (URL)',        required:false},
+      {key:'video_intro',       label:'Танилцуулга бичлэг (URL, max 1 мин)', required:false},
+      {key:'hiilgeh_ajil',      label:'Хийлгэх ажил',      required:true},
+      {key:'turshlaga',         label:'Туршлага',           required:false},
+      {key:'une_huls',          label:'Үнэ / Хөлс (₮)',    required:false},
+      {key:'chiglel',           label:'Чиглэл',             required:false},
+      {key:'hayg',              label:'Хаяг',               required:false, isAddress:true},
+      {key:'utas',              label:'Холбоо барих утас',  required:false},
+      {key:'nemelt',            label:'Нэмэлт',             required:false, textarea:true},
+    ],
+    get fields() {
+      // returns based on form zarlagch_turul
+      return this.fieldsOrg; // default, overridden in form
+    },
+    cardTitle:(d)=>d.alban_tushaal||d.hiilgeh_ajil||d.ner||'Ажлын зар',
+    cardSub:(d)=>d.baiguulgiin_ner||(d.zarlagch_turul==='Хувь хүн'?'Хувь хүн':null),
+    salaryKey:'tsalin',
   },
   dadlaga: {
     title:'Дадлага', addLabel:'Зар нэмэх', addTitle:'Дадлагын зар оруулах',

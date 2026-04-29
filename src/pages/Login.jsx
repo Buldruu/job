@@ -302,9 +302,12 @@ function RegisterForm({ onSwitch }) {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialErr, setSocialErr] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault(); setErr('');
+    if (!agreed) { setErr('Үйлчилгээний нөхцөлийг зөвшөөрнө үү'); return; }
     if (pw !== pw2) { setErr('Нууц үг таарахгүй байна'); return; }
     if (pw.length < 6) { setErr('Нууц үг 6+ тэмдэгт байх ёстой'); return; }
     setLoading(true);
@@ -333,7 +336,23 @@ function RegisterForm({ onSwitch }) {
           </button>
         )}
       </ErrBox>
+      {/* Terms agreement */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-brand-500 flex-shrink-0"/>
+          <span className="text-xs text-gray-600 leading-relaxed">
+            Бүртгүүлснээр{' '}
+            <button type="button" onClick={()=>setShowTerms(true)}
+              className="text-brand-500 font-semibold underline">
+              HaGA-ийн үйлчилгээний нөхцөл
+            </button>
+            -ийг зөвшөөрч байна.
+          </span>
+        </label>
+      </div>
       <Btn loading={loading} label="Бүртгүүлж нэвтрэх"/>
+      {showTerms && <TermsModal onClose={()=>setShowTerms(false)} onAgree={()=>{setAgreed(true);setShowTerms(false);}}/>}
       <p className="text-center text-gray-400 text-sm">
         Бүртгэлтэй юу?{' '}
         <button type="button" onClick={() => onSwitch('login')} className="text-brand-500 font-semibold">Нэвтрэх</button>
@@ -422,5 +441,85 @@ export default function Login() {
         {screen === 'phone'    && <PhoneForm    onSwitch={setScreen}/>}
       </div>
     </AuthShell>
+  );
+}
+
+function TermsModal({ onClose, onAgree }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{fontFamily:"inherit"}}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg z-10 max-h-[85vh] flex flex-col"
+        onClick={e=>e.stopPropagation()}>
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 bg-gray-200 rounded-full"/>
+        </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surf-100 flex-shrink-0">
+          <h2 className="font-display font-bold text-gray-800 text-lg">Үйлчилгээний нөхцөл</h2>
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 text-sm text-gray-600 leading-relaxed">
+          <div className="bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
+            <p className="font-semibold text-brand-700 mb-1">HaGA платформыг ашигласнаар дараах нөхцөлийг зөвшөөрч байна:</p>
+          </div>
+
+          <section>
+            <h3 className="font-bold text-gray-800 mb-2">1. Хувийн мэдээлэл</h3>
+            <p>Та бүртгүүлэх үед оруулсан мэдээлэл (нэр, чиглэл, чадвар, холбоо барих мэдээлэл) нь <strong>ажил хайж буй компани болон байгууллагад</strong> харагдах болно. Энэ нь платформын үндсэн зорилго бөгөөд та энэ нөхцөлийг зөвшөөрч байгаа тул бүртгүүлж байна.</p>
+          </section>
+
+          <section>
+            <h3 className="font-bold text-gray-800 mb-2">2. Хориглосон үйл ажиллагаа</h3>
+            <ul className="space-y-1.5 list-none">
+              {[
+                'Хуурамч, төөрөгдүүлсэн зар байршуулах',
+                'Хууль бус худалдааны зар оруулах (мансууруулах бодис, хулгайн зүйл гэх мэт)',
+                'Хуурамч мэргэжлийн үнэмлэх, диплом ашиглах',
+                'Бусад хэрэглэгчийн хувийн мэдээллийг зөвшөөрөлгүй ашиглах',
+                'Спам, олон давтагдсан зар оруулах',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-2">
+                  <span className="text-red-400 flex-shrink-0 mt-0.5">✕</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="font-bold text-gray-800 mb-2">3. Хариуцлага</h3>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800">
+              <p className="font-semibold mb-1">⚠️ Чухал мэдэгдэл</p>
+              <p>HaGA платформ нь <strong>зөвхөн ажил, ажилтан хайх зуучлалын үйлчилгээ</strong> юм. Хэрэглэгчид хоорондын гэрээ, төлбөр тооцоо, маргааны хариуцлагыг платформ хүлээхгүй.</p>
+            </div>
+            <p className="mt-2">Хэрэглэгч нь платформыг ашиглах явцад хийсэн <strong>хууль бус үйл ажиллагааны бүх хариуцлагыг өөрөө</strong> үүрнэ. HaGA энд хамааралгүй болно.</p>
+          </section>
+
+          <section>
+            <h3 className="font-bold text-gray-800 mb-2">4. Контент шалгалт</h3>
+            <p>Платформ дээр байршуулсан зарыг Админ хянах эрхтэй. Дүрэм зөрчсөн зарыг устгах, хэрэглэгчийн эрхийг хязгаарлах, блоклох эрхийг платформ хадгална.</p>
+          </section>
+
+          <section>
+            <h3 className="font-bold text-gray-800 mb-2">5. Нууцлал</h3>
+            <p>Таны мэдээллийг гуравдагч этгээдэд заргуй зарахгүй. Зөвхөн платформын дотоод үйл ажиллагаа болон ажил олгогчид харуулах зориулалттай.</p>
+          </section>
+        </div>
+        <div className="px-6 py-4 border-t border-surf-100 flex gap-3 flex-shrink-0">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold border border-surf-200 text-gray-500 hover:bg-surf-50 transition">
+            Болих
+          </button>
+          <button onClick={onAgree}
+            className="flex-1 py-3 rounded-xl text-sm font-bold bg-brand-500 hover:bg-brand-600 text-white transition shadow-btn">
+            ✅ Зөвшөөрч, бүртгүүлэх
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
