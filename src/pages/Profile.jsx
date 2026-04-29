@@ -23,7 +23,7 @@ export default function Profile() {
 
   const [tab, setTab] = useState('medeelel');
   const [form, setForm] = useState({
-    ovog:'', ner:'', chadvar:'', turshlaga:'',
+    ovog:'', ner:'', chadvar:'', turshlaga:'', tsagiin_huls:'',
     hayg:'', chiglel:'', tsalin:'', cv:'', nemelt:'',
     zэрэг:'', surgaltin_gazar:'', cert_url:'',
   });
@@ -51,6 +51,7 @@ export default function Profile() {
       ner:            profile.ner            || '',
       chadvar:        profile.chadvar        || '',
       turshlaga:      profile.turshlaga      || '',
+      tsagiin_huls:   profile.tsagiin_huls   || '',
       hayg:           profile.hayg           || '',
       chiglel:        profile.chiglel        || '',
       tsalin:         profile.tsalin         || '',
@@ -289,6 +290,7 @@ export default function Profile() {
       <div className="flex gap-1 bg-surf-100 rounded-xl p-1 mb-7 animate-fade-up-delay overflow-x-auto">
         {[
           {key:'medeelel', label:'Мэдээлэл',   icon:'👤'},
+          {key:'nemelt_tab', label:'Нэмэлт',    icon:'⚡'},
           {key:'ajlууд',   label:'Миний зарууд',icon:'📋'},
           {key:'sanhuu',   label:'Санхүү',      icon:'💳'},
         ].map(t=>(
@@ -321,7 +323,9 @@ export default function Profile() {
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Чиглэл</label>
                 <ProfileChiglелSelect value={form.chiglel} onChange={v=>set('chiglel',v)}/>
               </div>
-              <Field label="Хүссэн цалин (₮)" value={form.tsalin} onChange={v=>set('tsalin',v)} placeholder="1,500,000"/>
+              <Field label="Сарын цалин (₮/сар)" value={form.tsalin} onChange={v=>set('tsalin',v)} placeholder="1,500,000"/>
+              <Field label="Цагийн хөлс (₮/цаг)" value={form.tsagiin_huls} onChange={v=>set('tsagiin_huls',v)} placeholder="15,000"/>
+              <Field label="Цагийн хөлс (₮/цаг)" value={form.tsagiin_huls} onChange={v=>set('tsagiin_huls',v)} placeholder="15,000"/>
             </div>
           </div>
 
@@ -501,6 +505,58 @@ export default function Profile() {
       )}
 
       {/* ══ МИНИЙ ЗАРУУД ══ */}
+      {tab==='nemelt_tab' && (
+        <div className="space-y-5 animate-fade-up">
+          <div className="card rounded-2xl p-5 border border-surf-200">
+            <h3 className="font-display font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span>💼</span> Туршлага болон ур чадвар
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Туршлагын жилийн тоо</label>
+                <input type="text" value={form.turshlaga} onChange={e=>set('turshlaga',e.target.value)}
+                  placeholder="Жишээ: 3 жил" className="input-base"/>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Чадвар / Мэдлэг</label>
+                <input type="text" value={form.chadvar} onChange={e=>set('chadvar',e.target.value)}
+                  placeholder="React, Python, Дизайн..." className="input-base"/>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Нэмэлт тайлбар</label>
+                <textarea rows={4} value={form.nemelt} onChange={e=>set('nemelt',e.target.value)}
+                  placeholder="Өөрийн тухай дэлгэрэнгүй..." className="input-base resize-none"/>
+              </div>
+            </div>
+          </div>
+
+          <div className="card rounded-2xl p-5 border border-surf-200">
+            <h3 className="font-display font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span>💰</span> Цалин болон хөлс
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Сарын цалин (₮)</label>
+                <input type="text" value={form.tsalin} onChange={e=>set('tsalin',e.target.value)}
+                  placeholder="1,500,000" className="input-base"/>
+                <p className="text-xs text-gray-400 mt-1">Хүссэн сарын цалин</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Цагийн хөлс (₮)</label>
+                <input type="text" value={form.tsagiin_huls} onChange={e=>set('tsagiin_huls',e.target.value)}
+                  placeholder="15,000" className="input-base"/>
+                <p className="text-xs text-gray-400 mt-1">Нэг цагийн үнэ</p>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={handleSave} disabled={saving}
+            className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-3 rounded-2xl text-sm transition-all flex items-center justify-center gap-2 shadow-btn">
+            {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '💾 Хадгалах'}
+          </button>
+        </div>
+      )}
+
       {tab==='ajlууд' && (
         <div className="space-y-3 animate-fade-up">
           {postsLoading ? (

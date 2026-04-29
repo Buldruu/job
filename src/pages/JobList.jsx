@@ -45,7 +45,8 @@ const configs = {
     title:'Ажилтан хайх', addLabel:'Зар нэмэх', addTitle:'Ажлын зар оруулах',
     collection:'workers',
     fields:[
-      {key:'baiguulgiin_ner',   label:'Байгууллагын нэр',  required:true},
+      {key:'zarlagch_turul',    label:'Зарлагчийн төрөл',   required:true, options:['Байгуулга','Хувь хүн']},
+      {key:'baiguulgiin_ner',   label:'Байгууллага/Нэр',   required:true},
       {key:'alban_tushaal',     label:'Албан тушаал',      required:true},
       {key:'chadvar',           label:'Чадвар / Мэдлэг',   required:false},
       {key:'turshlaga',         label:'Туршлага',          required:false},
@@ -145,7 +146,8 @@ export default function JobList({ type }) {
   const [ratedItemId, setRatedItemId] = useState(null); // track which item we rated
   const [editingRating, setEditingRating] = useState(false); // unlock to change
   const [premiumAds, setPremiumAds] = useState([]);
-  const [premiumFilter, setPremiumFilter] = useState(null); // 'rated'|'featured'|'premium'
+  const [premiumFilter, setPremiumFilter] = useState(null);
+  const [filterZarlagch, setFilterZarlagch] = useState(''); // 'Байгуулга'|'Хувь хүн'|'' // 'rated'|'featured'|'premium'
   const [filterSalaryMin, setFilterSalaryMin] = useState('');
 
   // Load business ads
@@ -367,6 +369,7 @@ export default function JobList({ type }) {
         const salNum = parseFloat(String(i[cfg.salaryKey]||'').replace(/[^0-9.]/g,''));
         if (!salNum || salNum < parseFloat(filterSalaryMin)) return false;
       }
+      if (filterZarlagch && i.zarlagch_turul !== filterZarlagch) return false;
       return true;
     })
     // Sort: premium poster's posts → featured → newest
@@ -484,6 +487,24 @@ export default function JobList({ type }) {
           </div>
         )}
 
+        {/* Zarlagch filter — only for ajiltan */}
+        {type === 'ajiltan' && (
+          <div className="flex gap-2 flex-wrap items-center pt-1 border-t border-surf-100">
+            <span className="text-xs text-gray-400 font-semibold">Зарлагч:</span>
+            {['Байгуулга', 'Хувь хүн'].map(t => (
+              <button key={t}
+                onClick={() => setFilterZarlagch(f => f === t ? '' : t)}
+                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
+                  filterZarlagch === t
+                    ? 'bg-brand-500 border-brand-500 text-white'
+                    : 'bg-surf-50 border-surf-200 text-gray-500 hover:bg-surf-100'
+                }`}>
+                {t === 'Байгуулга' ? '🏢 ' : '👤 '}{t}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Premium filters */}
         {isPremiumActive(profile) && (
           <div className="flex gap-2 flex-wrap items-center pt-1 border-t border-surf-100">
@@ -587,6 +608,7 @@ export default function JobList({ type }) {
                   {item.featured && <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">⭐ Онцлох</span>}
                   {item._isPremiumPoster && <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full font-medium">💎 Premium</span>}
                   {item.uid===user?.uid && <span className="text-xs text-brand-500 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full font-medium">● Миний зар</span>}
+                  {item.zarlagch_turul && <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${item.zarlagch_turul==='Байгуулга' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>{item.zarlagch_turul==='Байгуулга' ? '🏢' : '👤'} {item.zarlagch_turul}</span>}
                 </div>
                 <div className="text-gray-300 text-xs mt-2">{item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')||''}</div>
               </button>
@@ -704,43 +726,9 @@ export default function JobList({ type }) {
             })}
           </div>
 
-          {/* Poster profile */}
+          {/* Poster profile — expanded with report */}
           {selectedOwner && (
-            <div className="mt-4 pt-4 border-t border-surf-100">
-              <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Зар оруулагч</p>
-              <div className="bg-surf-50 rounded-xl p-4 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">
-                  {selectedOwner.photoURL
-                    ? <img src={selectedOwner.photoURL} alt="" className="w-full h-full object-cover"/>
-                    : <span className="text-sm font-bold text-brand-600">
-                        {(selectedOwner.ner||'?')[0].toUpperCase()}
-                      </span>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-gray-800 font-semibold text-sm">
-                    {selectedOwner.ner?`${selectedOwner.ovog||''} ${selectedOwner.ner}`.trim():'—'}
-                  </div>
-                  {/* email hidden for privacy */}
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {selectedOwner.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{selectedOwner.chiglel}</span>}
-                    {selectedOwner.turshlaga && <span className="text-xs bg-surf-100 border border-surf-200 text-gray-500 px-2 py-0.5 rounded-full">{selectedOwner.turshlaga}</span>}
-                    {selectedOwner.tsalin && <span className="text-xs bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">{selectedOwner.tsalin}₮</span>}
-                  </div>
-                  {selectedOwner.chadvar && <div className="mt-1.5 text-xs text-gray-500">{selectedOwner.chadvar}</div>}
-                  {selected._isPremiumPoster && (
-                    <span className="inline-block mt-1.5 text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full font-medium">💎 Premium гишүүн</span>
-                  )}
-                  {selected.utas && (
-                    <div className="mt-1.5 flex items-center gap-1 text-xs text-brand-600 font-medium">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                      </svg>
-                      {selected.utas}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <PosterCard owner={selectedOwner} isPremium={selected._isPremiumPoster} postUtas={selected.utas} isOwnPost={selected.uid === user?.uid} postId={selected.id} db={db} user={user}/>
           )}
         </Modal>
       )}
@@ -767,6 +755,20 @@ export default function JobList({ type }) {
                 ) : f.textarea ? (
                   <textarea value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                     required={f.required} rows={3} className="input-base resize-none"/>
+                ) : f.options ? (
+                  <div className="flex gap-2">
+                    {f.options.map(opt => (
+                      <button key={opt} type="button"
+                        onClick={() => setForm(p=>({...p,[f.key]:opt}))}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                          form[f.key]===opt
+                            ? 'bg-brand-500 border-brand-500 text-white'
+                            : 'bg-surf-50 border-surf-200 text-gray-600 hover:bg-surf-100'
+                        }`}>
+                        {opt==='Байгуулга' ? '🏢 ' : '👤 '}{opt}
+                      </button>
+                    ))}
+                  </div>
                 ) : f.key==='chiglel' ? (
                   <ChiglелSelect value={form[f.key]||''} onChange={v=>setForm(p=>({...p,[f.key]:v}))}/>
                 ) : (
@@ -815,6 +817,119 @@ export default function JobList({ type }) {
           </form>
         </Modal>
       )}
+    </div>
+  );
+}
+
+function PosterCard({ owner, isPremium, postUtas, isOwnPost, postId, db, user }) {
+  const [reporting, setReporting] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+
+  const handleReport = async () => {
+    if (!reportReason.trim()) return;
+    setReporting(true);
+    try {
+      const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+      await addDoc(collection(db, 'reports'), {
+        postId, reporterUid: user?.uid,
+        ownerUid: owner.id, reason: reportReason,
+        createdAt: serverTimestamp(),
+      });
+      setReported(true);
+      setShowReport(false);
+    } catch(e) { alert('Алдаа гарлаа'); }
+    setReporting(false);
+  };
+
+  const displayName = owner.ner ? `${owner.ovog||''} ${owner.ner}`.trim() : '—';
+  const initial = (owner.ner || owner.email || '?')[0].toUpperCase();
+
+  return (
+    <div className="mt-4 pt-4 border-t border-surf-100">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-gray-400 text-xs uppercase tracking-wider font-semibold">Зар оруулагч</p>
+        {!isOwnPost && (
+          reported
+            ? <span className="text-xs text-gray-400">✓ Мэдэгдлийг хүлээн авлаа</span>
+            : <button onClick={() => setShowReport(s => !s)}
+                className="text-xs text-gray-300 hover:text-red-400 transition flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H9.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                </svg>
+                Мэдэгдэх
+              </button>
+        )}
+      </div>
+
+      {/* Report form */}
+      {showReport && (
+        <div className="mb-3 bg-red-50 border border-red-100 rounded-xl p-3">
+          <p className="text-xs font-semibold text-red-600 mb-2">Яагаад мэдэгдэж байна вэ?</p>
+          <div className="space-y-1.5 mb-2">
+            {['Хуурамч зар','Залилан','Зохисгүй агуулга','Давтагдсан зар','Бусад'].map(r => (
+              <label key={r} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                <input type="radio" name="report" value={r} checked={reportReason===r} onChange={()=>setReportReason(r)} className="accent-red-500"/>
+                {r}
+              </label>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleReport} disabled={!reportReason||reporting}
+              className="text-xs bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg transition">
+              {reporting ? '...' : 'Илгээх'}
+            </button>
+            <button onClick={() => setShowReport(false)} className="text-xs text-gray-400 hover:text-gray-600 px-3 py-1.5">Болих</button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile card */}
+      <div className="bg-surf-50 rounded-2xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-xl overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">
+            {owner.photoURL
+              ? <img src={owner.photoURL} alt="" className="w-full h-full object-cover"/>
+              : <span className="font-bold text-brand-600 text-base">{initial}</span>}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-gray-800 text-sm">{displayName}</div>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {isPremium && <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full font-medium">💎 Premium</span>}
+              {owner.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{owner.chiglel}</span>}
+              {owner.turshlaga && <span className="text-xs bg-surf-100 border border-surf-200 text-gray-500 px-2 py-0.5 rounded-full">{owner.turshlaga}</span>}
+              {owner.zovshoorol === true && <span className="text-xs bg-teal-50 border border-teal-200 text-teal-600 px-2 py-0.5 rounded-full">✓ Баталгаажсан</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="mt-3 space-y-1.5">
+          {owner.chadvar && (
+            <div className="text-xs text-gray-500"><span className="font-medium text-gray-600">Чадвар:</span> {owner.chadvar}</div>
+          )}
+          {owner.nemelt && (
+            <div className="text-xs text-gray-500 line-clamp-2">{owner.nemelt}</div>
+          )}
+          <div className="flex flex-wrap gap-3 mt-2">
+            {owner.tsalin && (
+              <span className="text-xs text-emerald-700 font-semibold">💰 {owner.tsalin}₮/сар</span>
+            )}
+            {owner.tsagiin_huls && (
+              <span className="text-xs text-emerald-700 font-semibold">⏱ {owner.tsagiin_huls}₮/цаг</span>
+            )}
+          </div>
+          {postUtas && (
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-brand-600 font-semibold">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
+              {postUtas}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

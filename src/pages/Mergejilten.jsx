@@ -113,7 +113,7 @@ export default function Mergejilten() {
           <p className="text-xs mt-2 text-gray-400">Профайл дотроо мэргэжлийн үнэмлэхийн мэдээлэл оруулна уу</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up-delay">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-fade-up-delay">
           {sorted.map(w => {
             const { avg, count } = ratingsMap[w.id] || { avg: 0, count: 0 };
             return (
