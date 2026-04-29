@@ -4,8 +4,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Nunito', 'sans-serif'],
-        display: ['Lexend', 'sans-serif'],
+        sans:    ["'Plus Jakarta Sans'", 'sans-serif'],
+        display: ["'Plus Jakarta Sans'", 'sans-serif'],
+        mono:    ["'Inter'", 'monospace'],
       },
       colors: {
         brand: {

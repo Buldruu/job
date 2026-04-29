@@ -36,8 +36,9 @@ const P = {
   gradSoft:'linear-gradient(135deg, #F0F7FF 0%, #E8F4FD 100%)',
 };
 
-// ── Typography tokens ──
+// ── Typography tokens — Plus Jakarta Sans for ALL text ──
 const F = {
+  // Headings — bold, tight
   display: (sz, extra={}) => ({
     fontFamily: "'Plus Jakarta Sans', sans-serif",
     fontSize: sz, fontWeight: 800, lineHeight: 1.1, ...extra
@@ -46,14 +47,16 @@ const F = {
     fontFamily: "'Plus Jakarta Sans', sans-serif",
     fontSize: sz, fontWeight: 700, lineHeight: 1.3, ...extra
   }),
+  // Body — regular weight, relaxed
   body: (sz, extra={}) => ({
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
     fontSize: sz, fontWeight: 400, lineHeight: 1.7, ...extra
   }),
+  // Labels — medium weight, uppercase (same font, no mono)
   label: (sz, extra={}) => ({
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: sz, fontWeight: 500,
-    letterSpacing: '0.06em', textTransform: 'uppercase', ...extra
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontSize: sz, fontWeight: 600,
+    letterSpacing: '0.08em', textTransform: 'uppercase', ...extra
   }),
 };
 
@@ -79,7 +82,7 @@ export default function BrandModal({ onClose }) {
   const modal = (
     <div style={{ position:'fixed', inset:0, zIndex:9999,
       display:'flex', alignItems:'center', justifyContent:'center',
-      padding:16, fontFamily:"'Inter', sans-serif" }}>
+      padding:16, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(15,23,42,0.55)',
         backdropFilter:'blur(6px)' }} onClick={onClose}/>
 
@@ -366,7 +369,7 @@ function LogoTab() {
               flexDirection:'column', gap:8 }}>
               {d.items.map(it => (
                 <div key={it} style={{ display:'flex', gap:8, ...F.body(12), color:P.slate }}>
-                  <span style={{ color:d.hcol, fontFamily:"'JetBrains Mono',monospace", flexShrink:0 }}>{d.arrow}</span>{it}
+                  <span style={{ color:d.hcol, fontFamily:"'Plus Jakarta Sans',sans-serif", flexShrink:0 }}>{d.arrow}</span>{it}
                 </div>
               ))}
             </div>
@@ -409,7 +412,7 @@ function ColorTab() {
               </div>
               <div style={{ background:P.white, padding:'10px 12px' }}>
                 <div style={{ ...F.heading(11), color:P.ink, marginBottom:2 }}>{s.name}</div>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:P.stone }}>{s.hex}</div>
+                <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:10, color:P.stone }}>{s.hex}</div>
               </div>
             </div>
           ))}
@@ -433,7 +436,7 @@ function ColorTab() {
               </div>
               <div style={{ background:P.white, padding:'10px 12px' }}>
                 <div style={{ ...F.heading(11), color:P.ink, marginBottom:2 }}>{s.name}</div>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:P.stone }}>{s.hex}</div>
+                <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:10, color:P.stone }}>{s.hex}</div>
               </div>
             </div>
           ))}
@@ -454,7 +457,7 @@ function ColorTab() {
               display:'flex', alignItems:'flex-end', padding:16 }}>
               <div>
                 <div style={{ ...F.label(10), color: g.dark===false ? P.slate : 'rgba(255,255,255,0.85)' }}>{g.label}</div>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:9,
                   color: g.dark===false ? P.stone : 'rgba(255,255,255,0.45)', marginTop:3 }}>{g.sub}</div>
               </div>
             </div>
@@ -521,24 +524,24 @@ function TypeTab() {
       {[
         {
           name:'Plus Jakarta Sans',
-          role:'Display / Heading',
+          role:'Display — Гарчиг',
           sample: <div style={{ ...F.display(44), color:P.ink, letterSpacing:-0.5 }}>HaGA Боломж</div>,
-          desc:'Дисплей болон гарчигт ашиглана. Дөрвөлжин хэлбэртэй, орчин үеийн дизайн. 700–800 жин.',
+          desc:'Дисплей болон гарчигт ашиглана. Лого-той ижил фонт. Хурц, орчин үеийн дизайн. Жин 700–800.',
           sizes:'32–56px · Weight 700–800',
         },
         {
-          name:'Inter',
-          role:'Body / UI Text',
-          sample: <div style={{ ...F.body(17), color:P.ink }}>Ажил хайх, шинэ боломж олох — хэрэгтэй бол одоо эхэл. Мянга мянган вакансы нэг дороо.</div>,
-          desc:'Гол бичвэрт ашиглана. Дэлгэцэнд зориулан бүтээгдсэн, хамгийн уншигдах хялбар фонт.',
-          sizes:'13–17px · Weight 400–600',
+          name:'Plus Jakarta Sans',
+          role:'Body — Гол бичвэр',
+          sample: <div style={{ ...F.body(16), color:P.ink }}>Ажил хайх, шинэ боломж олох — хэрэгтэй бол одоо эхэл. Мянга мянган вакансы нэг дороо.</div>,
+          desc:'Гол бичвэрт ашиглана. Display-тай ижил фонт, жин 400–500. Уншигдахад хялбар, нүдэнд зөөлөн.',
+          sizes:'13–17px · Weight 400–500',
         },
         {
-          name:'JetBrains Mono',
-          role:'Label / Code / Tag',
-          sample: <div style={{ ...F.label(12), color:P.blue }}>UI Label · Tag · Caption · Code</div>,
-          desc:'Лейбел, таг, кодын хэсэгт ашиглана. Хаалттай хэлбэртэй үсгүүд, тоо алдаагүй харагдана.',
-          sizes:'9–12px · ALL CAPS · letter-spacing 0.06em',
+          name:'Plus Jakarta Sans',
+          role:'Label — Тэмдэглэгээ',
+          sample: <div style={{ ...F.label(11), color:P.blue }}>UI LABEL · TAG · CAPTION</div>,
+          desc:'Лейбел болон тагт ашиглана. Ижил фонт, жижиг хэмжээтэй, том үсгээр бичнэ. Нэгдмэл дүр төрх.',
+          sizes:'9–12px · Weight 600 · ALL CAPS · 0.08em spacing',
         },
       ].map(t => (
         <Card key={t.name}>
