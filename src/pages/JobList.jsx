@@ -61,9 +61,8 @@ const configs = {
     // Хувь хүн fields — зураг, богино бичлэг, өөрийн мэдээлэл
     fieldsPerson:[
       {key:'zarlagch_turul',    label:'Зарлагчийн төрөл',   required:true, options:['Байгуулга','Хувь хүн']},
-      {key:'ner',               label:'Нэр',                required:true},
-      {key:'photo_url',         label:'Зураг (URL)',        required:false},
-      {key:'video_intro',       label:'Танилцуулга бичлэг (URL, max 1 мин)', required:false},
+      {key:'photo_url',         label:'Зураг',              required:false, isPhotoUpload:true},
+      {key:'video_intro',       label:'Танилцуулга бичлэг (max 1 мин)', required:false, isVideoUpload:true},
       {key:'hiilgeh_ajil',      label:'Хийлгэх ажил',      required:true},
       {key:'turshlaga',         label:'Туршлага',           required:false},
       {key:'une_huls',          label:'Үнэ / Хөлс (₮)',    required:false},
@@ -76,8 +75,8 @@ const configs = {
       // returns based on form zarlagch_turul
       return this.fieldsOrg; // default, overridden in form
     },
-    cardTitle:(d)=>d.zarlagch_turul==='Хувь хүн' ? (d.hiilgeh_ajil||d.ner||'Зар') : (d.alban_tushaal||'Ажлын зар'),
-    cardSub:(d)=>d.zarlagch_turul==='Хувь хүн' ? (d.ner||'Хувь хүн') : (d.baiguulgiin_ner||null),
+    cardTitle:(d)=>d.zarlagch_turul==='Хувь хүн' ? (d.hiilgeh_ajil||'Ажлын зар') : (d.alban_tushaal||'Ажлын зар'),
+    cardSub:(d)=>d.zarlagch_turul==='Хувь хүн' ? 'Хувь хүн' : (d.baiguulgiin_ner||null),
     salaryKey:'tsalin',
   },
   dadlaga: {
@@ -156,6 +155,10 @@ export default function JobList({ type }) {
   const [activeSearch, setActiveSearch] = useState('');
   const [form, setForm] = useState({});
   const [cvFile, setCvFile] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [cvParsing, setCvParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -259,9 +262,28 @@ export default function JobList({ type }) {
     }
     setSaving(true);
     try {
+      // 0. Upload photo/video if provided
+      let photo_url = form.photo_url || '';
+      let video_intro = form.video_intro || '';
+      if (photoFile) {
+        setPhotoUploading(true);
+        const photoRef = ref(storage, `workers/${user.uid}/photo_${Date.now()}`);
+        await uploadBytes(photoRef, photoFile);
+        photo_url = await getDownloadURL(photoRef);
+        setPhotoUploading(false);
+      }
+      if (videoFile) {
+        setVideoUploading(true);
+        const videoRef = ref(storage, `workers/${user.uid}/video_${Date.now()}`);
+        await uploadBytes(videoRef, videoFile);
+        video_intro = await getDownloadURL(videoRef);
+        setVideoUploading(false);
+      }
       // 1. Firestore-d shuud hagalna
       const docRef = await addDoc(collection(db, cfg.collection), {
         ...form,
+        ...(photo_url  ? { photo_url  } : {}),
+        ...(video_intro ? { video_intro } : {}),
         ratings: [],
         uid: user.uid,
         email: user.email,
@@ -761,7 +783,7 @@ export default function JobList({ type }) {
         <Modal onClose={()=>{setShowForm(false);setForm({});setCvFile(null);}}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-display font-bold text-gray-800">{cfg.addTitle}</h2>
-            <button onClick={()=>{setShowForm(false);setForm({});setCvFile(null);}} className="text-gray-300 hover:text-gray-500 p-1 transition">
+            <button onClick={()=>{setShowForm(false);setForm({});setCvFile(null);setPhotoFile(null);setVideoFile(null);}} className="text-gray-300 hover:text-gray-500 p-1 transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -781,6 +803,65 @@ export default function JobList({ type }) {
                 ) : f.textarea ? (
                   <textarea value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                     required={f.required} rows={3} className="input-base resize-none"/>
+                ) : f.isPhotoUpload ? (
+                  <div>
+                    <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-surf-200 rounded-xl px-4 py-5 cursor-pointer hover:border-brand-300 hover:bg-brand-50 transition-all group">
+                      {form.photo_url ? (
+                        <img src={form.photo_url} alt="preview" className="w-24 h-24 rounded-xl object-cover"/>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 bg-surf-100 group-hover:bg-brand-100 rounded-xl flex items-center justify-center text-2xl transition-all">📸</div>
+                          <span className="text-xs text-gray-400 group-hover:text-brand-500">Зураг оруулах (JPG, PNG, max 5MB)</span>
+                        </>
+                      )}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setPhotoFile(file);
+                          const url = URL.createObjectURL(file);
+                          setForm(p => ({...p, photo_url: url}));
+                        }}/>
+                    </label>
+                    {photoFile && (
+                      <div className="mt-1.5 flex items-center justify-between text-xs text-brand-600 bg-brand-50 border border-brand-100 rounded-xl px-3 py-2">
+                        <span>📸 {photoFile.name}</span>
+                        <button type="button" onClick={() => { setPhotoFile(null); setForm(p=>({...p,photo_url:''})); }}
+                          className="text-red-400 hover:text-red-600 ml-2">✕</button>
+                      </div>
+                    )}
+                  </div>
+                ) : f.isVideoUpload ? (
+                  <div>
+                    <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-surf-200 rounded-xl px-4 py-5 cursor-pointer hover:border-brand-300 hover:bg-brand-50 transition-all group">
+                      {form.video_intro ? (
+                        <div className="text-center">
+                          <div className="text-3xl mb-1">🎥</div>
+                          <span className="text-xs text-emerald-600 font-medium">Бичлэг сонгогдсон</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 bg-surf-100 group-hover:bg-brand-100 rounded-xl flex items-center justify-center text-2xl transition-all">🎥</div>
+                          <span className="text-xs text-gray-400 group-hover:text-brand-500">Бичлэг оруулах (MP4, MOV, max 1 мин, 50MB)</span>
+                        </>
+                      )}
+                      <input type="file" accept="video/*" className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 50 * 1024 * 1024) { alert('Бичлэгийн хэмжээ 50MB-аас хэтрэхгүй байх ёстой'); return; }
+                          setVideoFile(file);
+                          setForm(p => ({...p, video_intro: file.name}));
+                        }}/>
+                    </label>
+                    {videoFile && (
+                      <div className="mt-1.5 flex items-center justify-between text-xs text-brand-600 bg-brand-50 border border-brand-100 rounded-xl px-3 py-2">
+                        <span>🎥 {videoFile.name}</span>
+                        <button type="button" onClick={() => { setVideoFile(null); setForm(p=>({...p,video_intro:''})); }}
+                          className="text-red-400 hover:text-red-600 ml-2">✕</button>
+                      </div>
+                    )}
+                  </div>
                 ) : f.options ? (
                   <div className="flex gap-2">
                     {f.options.map(opt => (
