@@ -76,8 +76,8 @@ const configs = {
       // returns based on form zarlagch_turul
       return this.fieldsOrg; // default, overridden in form
     },
-    cardTitle:(d)=>d.alban_tushaal||d.hiilgeh_ajil||d.ner||'Ажлын зар',
-    cardSub:(d)=>d.baiguulgiin_ner||(d.zarlagch_turul==='Хувь хүн'?'Хувь хүн':null),
+    cardTitle:(d)=>d.zarlagch_turul==='Хувь хүн' ? (d.hiilgeh_ajil||d.ner||'Зар') : (d.alban_tushaal||'Ажлын зар'),
+    cardSub:(d)=>d.zarlagch_turul==='Хувь хүн' ? (d.ner||'Хувь хүн') : (d.baiguulgiin_ner||null),
     salaryKey:'tsalin',
   },
   dadlaga: {
@@ -734,7 +734,10 @@ export default function JobList({ type }) {
           </div>
 
           <div className="space-y-3 max-h-[38vh] overflow-y-auto pr-1">
-            {cfg.fields.map(f=>{
+            {(type==='ajiltan'
+              ? (selected?.zarlagch_turul==='Хувь хүн' ? cfg.fieldsPerson : cfg.fieldsOrg)
+              : cfg.fields
+            ).filter(f => f.key !== 'zarlagch_turul').map(f=>{
               const val = selected[f.key];
               if (!val) return null;
               return (
@@ -765,7 +768,10 @@ export default function JobList({ type }) {
             </button>
           </div>
           <form onSubmit={handleAdd} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-            {cfg.fields.map(f=>(
+            {(type==='ajiltan'
+              ? (form.zarlagch_turul==='Хувь хүн' ? cfg.fieldsPerson : cfg.fieldsOrg)
+              : cfg.fields
+            ).map(f=>(
               <div key={f.key}>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                   {f.label}{f.required&&<span className="text-red-400 ml-1">*</span>}
@@ -779,7 +785,14 @@ export default function JobList({ type }) {
                   <div className="flex gap-2">
                     {f.options.map(opt => (
                       <button key={opt} type="button"
-                        onClick={() => setForm(p=>({...p,[f.key]:opt}))}
+                        onClick={() => {
+                          // Reset form when switching type (keep only zarlagch_turul)
+                          if (f.key === 'zarlagch_turul' && form[f.key] !== opt) {
+                            setForm({ zarlagch_turul: opt });
+                          } else {
+                            setForm(p => ({...p, [f.key]: opt}));
+                          }
+                        }}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
                           form[f.key]===opt
                             ? 'bg-brand-500 border-brand-500 text-white'
