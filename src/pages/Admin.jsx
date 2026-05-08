@@ -38,7 +38,7 @@ export default function Admin() {
   );
 
   if (!profile?.isAdmin) return (
-    <div className="p-4 sm:p-8 max-w-lg">
+    <div style={{background:"var(--parchment)",minHeight:"100%"}} className="p-4 ">
       <div className="card rounded-2xl p-8 text-center border border-red-100 bg-red-50">
         <div className="text-4xl mb-4">🔒</div>
         <h2 className="text-lg font-display font-bold text-red-600 mb-2">Хандах эрхгүй</h2>
@@ -80,7 +80,7 @@ export default function Admin() {
   ];
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl">
+    <div style={{background:"var(--parchment)",minHeight:"100%"}} className="p-4 ">
       {/* Header */}
       <div className="mb-6 animate-fade-up">
         <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
@@ -311,7 +311,7 @@ export default function Admin() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)}/>
-          <div className="relative bg-white w-full sm:max-w-md z-10 animate-fade-up border border-surf-200
+          <div className="relative bg-white w-full sm:z-10 animate-fade-up border border-surf-200
             rounded-t-3xl sm:rounded-2xl shadow-2xl
             max-h-[92vh] sm:max-h-[85vh] flex flex-col"
             onClick={e => e.stopPropagation()}>

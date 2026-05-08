@@ -247,7 +247,7 @@ export default function Profile() {
   const colLabel = {jobs:'Ажил хайх', workers:'Ажилтан хайх', internships:'Дадлага', courses:'Сургалт'};
 
   return (
-    <div className="p-4 sm:p-8 max-w-2xl">
+    <div style={{padding:"16px",background:"var(--parchment)",minHeight:"100%"}}>
       {/* Avatar + name */}
       <div className="flex items-center gap-5 mb-8 animate-fade-up">
         <div className="relative flex-shrink-0">
@@ -462,7 +462,7 @@ export default function Profile() {
           {/* CV full-screen modal */}
           {showCvModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowCvModal(false)}>
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-surf-100">
                   <div>
                     <h3 className="font-display font-bold text-gray-800">CV / Намтар</h3>

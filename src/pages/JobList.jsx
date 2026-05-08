@@ -140,6 +140,13 @@ const getPlan = (profile) => {
   return profile.premiumPlan || 'free';
 };
 
+const HAGA = {
+  ch:'var(--charter-blue)', pg:'var(--parchment)', gd:'var(--seal-gold)', gdd:'var(--seal-gold-dark)',
+  sl:'var(--steel)', sll:'var(--steel-light)', hl:'var(--hairline)', hls:'var(--hairline-soft)',
+  pp:'var(--paper)', ch5:'var(--charter-blue-50)', ink:'var(--ink)', vg:'var(--verified-green)',
+  serif:"'Source Serif 4',serif", body:"'Manrope',sans-serif",
+};
+
 export default function JobList({ type }) {
   const cfg = configs[type];
   const { user, profile, refreshProfile } = useAuth();
@@ -432,7 +439,7 @@ export default function JobList({ type }) {
     });
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl">
+    <div style={{padding:"16px",background:"var(--parchment)",minHeight:"100%"}}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
@@ -475,42 +482,34 @@ export default function JobList({ type }) {
           </button>
         </div>
 
-        {/* 3-Level category filter */}
-        <div className="flex gap-2 flex-wrap items-center">
-          {/* Level 1 — Том ангилал */}
+        {/* 3-level category filter — Image 4 style */}
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
           <select value={filterMain}
             onChange={e => { setFilterMain(e.target.value); setFilterSub(''); setFilterProf(''); }}
-            className="input-base text-sm py-2 w-auto max-w-[180px]">
+            style={{ background:'var(--paper)', border:'1px solid var(--hairline)', borderRadius:8, padding:'8px 10px', fontSize:12, color:'var(--ink)', flex:1 }}>
             <option value="">🗂 Бүх ангилал</option>
             {MAIN_CATS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-
-          {/* Level 2 — Дэд ангилал */}
           {filterMain && (
             <select value={filterSub}
               onChange={e => { setFilterSub(e.target.value); setFilterProf(''); }}
-              className="input-base text-sm py-2 w-auto max-w-[180px] border-brand-300 bg-brand-50">
-              <option value="">— Дэд ангилал</option>
+              style={{ background:'var(--charter-blue-50)', border:'1px solid var(--charter-blue)', borderRadius:8, padding:'8px 10px', fontSize:12, color:'var(--charter-blue)', flex:1 }}>
+              <option value="">Дэд ангилал</option>
               {getSubs(filterMain).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
-
-          {/* Level 3 — Мэргэжил */}
           {filterMain && filterSub && (
             <select value={filterProf}
               onChange={e => setFilterProf(e.target.value)}
-              className="input-base text-sm py-2 w-auto max-w-[180px] border-emerald-300 bg-emerald-50">
-              <option value="">— Мэргэжил</option>
+              style={{ background:'var(--seal-gold-50)', border:'1px solid var(--seal-gold)', borderRadius:8, padding:'8px 10px', fontSize:12, color:'var(--seal-gold-dark)', flex:1 }}>
+              <option value="">Мэргэжил</option>
               {getProfs(filterMain, filterSub).map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           )}
-
           {(filterMain || activeSearch) && (
             <button onClick={resetFilters}
-              className="text-xs text-gray-400 hover:text-red-400 border border-gray-200 px-2.5 py-1.5 rounded-full transition flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-              </svg>
+              style={{ background:'none', border:'1px solid var(--hairline)', borderRadius:20, padding:'6px 10px', fontSize:11, color:'var(--steel)', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+              <svg style={{width:12,height:12}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
               Арилгах
             </button>
           )}
@@ -643,7 +642,9 @@ export default function JobList({ type }) {
             const cnt = (item.ratings||[]).length;
             return (
               <button key={item.id} onClick={()=>openDetail(item)}
-                className={`card card-hover rounded-2xl p-5 text-left border ${c.border} ${c.bg}`}>
+                style={{ background:HAGA.pp, border:`1px solid ${HAGA.hls}`, borderRadius:12, padding:14, textAlign:'left', cursor:'pointer', display:'block', width:'100%', transition:'box-shadow .15s' }}
+                onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 16px rgba(26,43,74,0.10)'}
+                onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold ${c.avatar} flex-shrink-0`}>
                     {(cfg.cardTitle(item)[0]||'?').toUpperCase()}
@@ -1131,7 +1132,7 @@ function Modal({ children, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={onClose}/>
       <div
-        className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full max-w-lg z-10 animate-fade-up border border-surf-200"
+        className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full z-10 animate-fade-up border border-surf-200"
         onClick={e => e.stopPropagation()}
       >
         {children}

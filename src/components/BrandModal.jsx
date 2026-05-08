@@ -23,7 +23,7 @@ const P = {
   slate:  '#475569',   // mid gray
   stone:  '#94A3B8',   // light gray
   cloud:  '#F8FAFC',   // warm white bg
-  white:  '#FFFFFF',
+  white:  'var(--paper)',
 
   // Accent
   teal:   '#0D9488',   // muted teal

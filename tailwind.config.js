@@ -1,41 +1,32 @@
-/** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       fontFamily: {
-        sans:    ["'Plus Jakarta Sans'", 'sans-serif'],
-        display: ["'Plus Jakarta Sans'", 'sans-serif'],
-        mono:    ["'Inter'", 'monospace'],
+        sans:    ["'Manrope'", 'system-ui', 'sans-serif'],
+        display: ["'Source Serif 4'", 'Georgia', 'serif'],
       },
       colors: {
-        brand: {
-          50:  '#f0f7ff',
-          100: '#dceeff',
-          200: '#b8deff',
-          300: '#7ec4fd',
-          400: '#38a3f8',
-          500: '#0e86f0',
-          600: '#0268cc',
-          700: '#0254a6',
-          800: '#064789',
-          900: '#0b3c72',
-        },
-        surf: {
-          50:  '#f8fafc',
-          100: '#f0f5fa',
-          200: '#e2ecf5',
-          300: '#c8daea',
-          400: '#94b8d4',
-          500: '#5b90b5',
-          600: '#3a6f96',
-        },
+        'charter-blue':    '#1A2B4A',
+        'charter-blue-50': '#EEF1F6',
+        'charter-blue-700':'#2A3D5E',
+        'parchment':       '#F7F2E9',
+        'parchment-deep':  '#EDE5D2',
+        'seal-gold':       '#C9A961',
+        'seal-gold-dark':  '#A8893F',
+        'seal-gold-50':    '#FAF1DC',
+        'verified-green':  '#2D7A4F',
+        'heritage-red':    '#A63D40',
+        'hairline':        '#D9D2C2',
+        'hairline-soft':   '#E8E2D2',
+        'steel':           '#6B7280',
+        'steel-light':     '#9CA3AF',
+        'ink':             '#1F1F1F',
+        'paper':           '#FFFFFF',
+        // Keep brand aliases for Tailwind class compat
+        brand: { 50:'#EEF1F6', 100:'#D5DFF0', 500:'#1A2B4A', 600:'#162540', 700:'#2A3D5E' },
+        surf:  { 50:'#F7F2E9', 100:'#EDE5D2', 200:'#D9D2C2' },
       },
-      boxShadow: {
-        'card': '0 2px 16px 0 rgba(14,134,240,0.07), 0 1px 4px 0 rgba(0,0,0,0.05)',
-        'card-hover': '0 8px 32px 0 rgba(14,134,240,0.13), 0 2px 8px 0 rgba(0,0,0,0.07)',
-        'btn': '0 2px 12px 0 rgba(14,134,240,0.30)',
-      }
     },
   },
   plugins: [],

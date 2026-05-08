@@ -120,7 +120,7 @@ export default function ProSection() {
   }).sort((a,b)=>(ratingsMap[b.id]?.avg||0)-(ratingsMap[a.id]?.avg||0));
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl">
+    <div style={{background:"var(--parchment)",minHeight:"100%"}} className="p-4 ">
       {/* Header */}
       <div className="mb-8 animate-fade-up">
         <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
@@ -298,7 +298,7 @@ export default function ProSection() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setSelected(null)}/>
-          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md z-10 animate-fade-up border border-surf-200 max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
+          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:z-10 animate-fade-up border border-surf-200 max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
             <div className="flex justify-center pt-3 pb-1 sm:hidden"><div className="w-10 h-1 bg-gray-200 rounded-full"/></div>
             <div className="flex items-start gap-4 px-6 pt-5 pb-4 border-b border-surf-100 flex-shrink-0">
               <div className="w-14 h-14 rounded-2xl overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">

@@ -78,7 +78,7 @@ export default function Mergejilten() {
   });
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl">
+    <div className="p-4 ">
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
@@ -162,7 +162,7 @@ export default function Mergejilten() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={() => setSelected(null)}/>
-          <div className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full max-w-md z-10 animate-fade-up border border-surf-200"
+          <div className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full z-10 animate-fade-up border border-surf-200"
             onClick={e => e.stopPropagation()}>
 
             <div className="flex items-start justify-between mb-5">
