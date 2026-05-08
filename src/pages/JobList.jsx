@@ -443,7 +443,7 @@ export default function JobList({ type }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGa</p>
           <h1 className="text-2xl font-display font-bold text-gray-800">{cfg.title}</h1>
         </div>
         <button onClick={() => setShowForm(true)}
