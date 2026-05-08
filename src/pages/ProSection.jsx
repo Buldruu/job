@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, query, onSnapshot, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { StarDisplay } from '../components/RatingStars';
 import { useNavigate } from 'react-router-dom';
 
-const fmt = (n) => Number(n).toLocaleString('mn-MN') + '₮';
-const DEGREES = ['Мастер', 'Доктор', 'Мэргэжлийн үнэмлэх'];
+const C = {
+  ch:'#1A2B4A', ch7:'#2A3D5E', ch5:'#EEF1F6',
+  pg:'#F7F2E9', pgd:'#EDE5D2',
+  gd:'#C9A961', gdd:'#A8893F', gd5:'#FAF1DC',
+  sl:'#6B7280', sll:'#9CA3AF', hl:'#D9D2C2', hls:'#E8E2D2',
+  pp:'#FFFFFF', ink:'#1F1F1F',
+  vg:'#2D7A4F', vg5:'#EDF7F2',
+};
+
+const fmt = (n) => '₮ ' + Number(n).toLocaleString();
 
 const isPremiumActive = (profile) => {
   if (!profile?.premiumPlan || profile.premiumPlan === 'free') return false;
@@ -15,343 +22,355 @@ const isPremiumActive = (profile) => {
   return new Date(until) > new Date();
 };
 
-const PLANS = [
-  {
-    key: 'basic', name: 'Basic', price: 9900, icon: '⭐',
-    features: ['Сард 10 зар','5 онцлох зар','💎 Premium badge','Дэвшилтэт хайлт'],
-    notFeatures: ['Хайлтанд хамгийн дээр','Платформд зар'],
-  },
-  {
-    key: 'pro', name: 'Pro', price: 24900, icon: '💎', popular: true,
-    features: ['Сард 30 зар','20 онцлох зар','💎 Premium badge','Дэвшилтэт хайлт','Хайлтанд хамгийн дээр'],
-    notFeatures: ['Платформд зар'],
-  },
-  {
-    key: 'business', name: 'Business', price: 59900, icon: '🏆',
-    features: ['Хязгааргүй зар','Хязгааргүй онцлох','💎 Premium badge','Дэвшилтэт хайлт','Хайлтанд хамгийн дээр','Платформд сурталчилгаа'],
-    notFeatures: [],
-  },
-];
+/* ── DAN Verification screen ── */
+function DANScreen({ onVerified, onBack }) {
+  const [loading, setLoading] = useState(false);
+  const [verified, setVerified] = useState(false);
 
-export default function ProSection() {
-  const { profile, user, refreshProfile } = useAuth();
+  const handleDAN = async () => {
+    setLoading(true);
+    // Simulate DAN verification (90 sec redirect)
+    // In production: redirect to https://dan.gov.mn
+    await new Promise(r => setTimeout(r, 2000));
+    setVerified(true);
+    setLoading(false);
+  };
+
+  if (verified) {
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.pg }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', background:C.pp, borderBottom:`1px solid ${C.hls}`, flexShrink:0 }}>
+          <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', color:C.ch, display:'flex' }}>
+            <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch }}>DAN баталгаажуулалт</div>
+        </div>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'0 32px', textAlign:'center' }}>
+          <div style={{ width:64, height:64, background:C.vg, color:C.pp, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:18 }}>
+            <svg style={{width:36,height:36}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:22, fontWeight:500, color:C.ch, marginBottom:8 }}>Баталгаажлаа!</div>
+          <div style={{ fontSize:13, color:C.sl, lineHeight:1.5, marginBottom:28 }}>Таны DAN баталгаажуулалт амжилттай дууслаа. Одоо Premium идэвхжүүлж болно.</div>
+          <button onClick={onVerified}
+            style={{ width:'100%', maxWidth:280, padding:13, background:C.ch, color:C.pg, border:'none', borderRadius:8, fontSize:14, fontWeight:500, cursor:'pointer' }}>
+            Premium руу үргэлжлүүлэх →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.pg }}>
+      {/* Appbar */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', background:C.pp, borderBottom:`1px solid ${C.hls}`, flexShrink:0 }}>
+        <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', color:C.ch, display:'flex' }}>
+          <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch }}>DAN баталгаажуулалт</div>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex:1, overflowY:'auto', padding:20 }}>
+        {/* Icon */}
+        <div style={{ textAlign:'center', padding:'16px 0 20px' }}>
+          <div style={{ width:72, height:72, background:C.ch5, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', color:C.ch }}>
+            <svg style={{width:36,height:36}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            </svg>
+          </div>
+          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:20, fontWeight:500, color:C.ch, marginBottom:10 }}>Үндэсний цахим танилт</div>
+          <div style={{ fontSize:13, color:C.sl, lineHeight:1.5, maxWidth:300, margin:'0 auto' }}>
+            Банкинд ашигладагтай ижил <strong style={{color:C.ch}}>DAN</strong> системээр өөрийгөө баталгаажуул.
+          </div>
+        </div>
+
+        {/* Why needed */}
+        <div style={{ background:C.gd5, border:`1px solid rgba(201,169,97,0.3)`, borderRadius:12, padding:16, marginBottom:14 }}>
+          <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:C.gdd, fontWeight:600, marginBottom:12 }}>ЭНЭ ЮУНД ХЭРЭГТЭЙ ВЭ?</div>
+          {[
+            'Захиалагч итгэлтэйгээр ажил өгөх',
+            'Эскроу системээр төлбөр хамгаалах',
+            'Verified үнэлгээ авч итгэлээ нэмэх',
+          ].map(item => (
+            <div key={item} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+              <div style={{ width:22, height:22, background:C.vg, color:C.pp, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div style={{ fontSize:13, color:C.ink }}>{item}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Privacy note */}
+        <div style={{ background:C.ch5, borderRadius:10, padding:'12px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
+          <svg style={{width:16,height:16,color:C.ch,flexShrink:0,marginTop:1}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <div style={{ fontSize:12, color:C.ch, lineHeight:1.5 }}>
+            Таны хувийн мэдээллийг HaGa хадгалахгүй. DAN зөвхөн нэрс таних зорилгоор ашиглана.
+          </div>
+        </div>
+      </div>
+
+      {/* Action button */}
+      <div style={{ padding:'12px 16px 24px', borderTop:`1px solid ${C.hls}`, flexShrink:0 }}>
+        <button onClick={handleDAN} disabled={loading}
+          style={{ display:'block', width:'100%', padding:13, background:C.ch, color:C.pg, border:'none', borderRadius:8, fontSize:14, fontWeight:500, cursor:'pointer', opacity: loading ? 0.7 : 1 }}>
+          {loading ? 'Холбогдож байна...' : 'DAN руу шилжих (90 секунд)'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Premium screen — Image left ── */
+function PremiumScreen({ onBack, onBuy }) {
+  const { profile } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('premium');
-  const [workers, setWorkers] = useState([]);
-  const [ratingsMap, setRatingsMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [filterDegree, setFilterDegree] = useState('Бүгд');
-  const [search, setSearch] = useState('');
-  const [paying, setPaying] = useState(null);
-  const [success, setSuccess] = useState(null);
-
   const isActive = isPremiumActive(profile);
-  const currentPlan = isActive ? profile?.premiumPlan : null;
-  const until = isActive ? (profile?.premiumUntil?.toDate?.() || profile?.premiumUntil) : null;
+  const [paying, setPaying] = useState(false);
+  const [showDAN, setShowDAN] = useState(false);
+  const [danDone, setDANDone] = useState(false);
 
-  // Load verified workers
+  const features = [
+    { label:'Ажилд санал илгээх', starred:true },
+    { label:'Шууд урилга илгээх, хүлээн авах', starred:true },
+    { label:'Ирсэн саналуудыг харах', starred:true },
+    { label:'DAN-аар баталгаажих', starred:false },
+    { label:'Эскроу хамгаалалт', starred:false },
+    { label:'Verified үнэлгээ', starred:false },
+    { label:'Premium тэмдэг, дээгүүр харагдах', starred:false },
+    { label:'Эксперт болох боломж', starred:false },
+  ];
+
+  const handleBuyClick = () => {
+    if (!danDone) {
+      setShowDAN(true);
+    } else {
+      onBuy();
+    }
+  };
+
+  if (showDAN) {
+    return <DANScreen onBack={()=>setShowDAN(false)} onVerified={()=>{ setDANDone(true); setShowDAN(false); }}/>;
+  }
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.ch, minHeight:'100%' }}>
+      {/* Dark appbar */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', background:'rgba(0,0,0,0.2)', borderBottom:'1px solid rgba(255,255,255,0.08)', flexShrink:0 }}>
+        <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', color:C.pg, display:'flex' }}>
+          <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.pg }}>Premium</div>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex:1, overflowY:'auto', padding:'24px 20px 0' }}>
+        {/* Eyebrow */}
+        <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:C.gd, fontWeight:600, marginBottom:8 }}>
+          PREMIUM ҮЙЛЧИЛГЭЭ
+        </div>
+        {/* Title */}
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:26, fontWeight:500, color:C.pg, letterSpacing:'-0.01em', lineHeight:1.15, marginBottom:10 }}>
+          Ажил, хэлцэл, итгэл
+        </div>
+        {/* Tagline */}
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontStyle:'italic', fontSize:14, color:'rgba(247,242,233,0.8)', lineHeight:1.45, marginBottom:22 }}>
+          HaGa дээр бизнес хийхэд хэрэгтэй бүх зүйл нэг дор.
+        </div>
+
+        {/* Active badge */}
+        {isActive && (
+          <div style={{ background:'rgba(201,169,97,0.2)', border:`1px solid ${C.gd}`, borderRadius:10, padding:'10px 14px', marginBottom:18, display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ fontSize:18 }}>💎</div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:C.gd }}>Premium идэвхтэй</div>
+              <div style={{ fontSize:11, color:'rgba(247,242,233,0.7)', marginTop:2 }}>
+                {profile.premiumUntil?.toDate ? new Date(profile.premiumUntil.toDate()).toLocaleDateString('mn-MN') : ''} хүртэл хүчинтэй
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DAN required notice */}
+        {!danDone && !isActive && (
+          <div style={{ background:'rgba(201,169,97,0.15)', border:`1px solid rgba(201,169,97,0.4)`, borderRadius:10, padding:'10px 14px', marginBottom:18, display:'flex', gap:10, alignItems:'flex-start' }}>
+            <svg style={{width:16,height:16,color:C.gd,flexShrink:0,marginTop:1}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+            <div style={{ fontSize:12, color:'rgba(247,242,233,0.85)', lineHeight:1.5 }}>
+              Premium авахын тулд эхлээд <strong style={{color:C.gd}}>DAN</strong> баталгаажуулалт хийх шаардлагатай.
+            </div>
+          </div>
+        )}
+
+        {danDone && !isActive && (
+          <div style={{ background:'rgba(45,122,79,0.3)', border:'1px solid rgba(45,122,79,0.5)', borderRadius:10, padding:'10px 14px', marginBottom:18, display:'flex', gap:10, alignItems:'center' }}>
+            <svg style={{width:16,height:16,color:'#6EE7B7',flexShrink:0}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <div style={{ fontSize:12, color:'rgba(247,242,233,0.9)' }}>DAN баталгаажуулалт амжилттай ✓</div>
+          </div>
+        )}
+
+        {/* Features */}
+        <ul style={{ listStyle:'none', padding:0, margin:'0 0 20px' }}>
+          {features.map((f, i) => (
+            <li key={i} style={{ fontSize:13, padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', gap:10, fontWeight: f.starred ? 500 : 400, color: f.starred ? C.pg : 'rgba(247,242,233,0.8)' }}>
+              <div style={{ width: f.starred ? 8 : 6, height: f.starred ? 8 : 6, borderRadius:'50%', background:C.gd, flexShrink:0 }}/>
+              {f.label}
+            </li>
+          ))}
+        </ul>
+
+        {/* Price box */}
+        <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:10, padding:'14px 16px', marginBottom:6 }}>
+          <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(247,242,233,0.7)', marginBottom:6 }}>САНАЛ БОЛГОЖ БУЙ</div>
+          <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
+            <span style={{ fontFamily:"'Source Serif 4',serif", fontSize:26, fontWeight:500, color:C.pg }}>₮ 39,000</span>
+            <span style={{ fontSize:13, color:'rgba(247,242,233,0.6)' }}>/ сар</span>
+          </div>
+          <div style={{ fontSize:12, color:'rgba(247,242,233,0.55)', marginTop:4 }}>Жилийн төлбөрөөр сард ₮ 29,000</div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ padding:'14px 20px 30px', flexShrink:0 }}>
+        {isActive ? (
+          <div style={{ textAlign:'center', padding:'13px', color:C.gd, fontSize:14, fontWeight:500 }}>💎 Premium идэвхтэй байна</div>
+        ) : (
+          <>
+            <button onClick={handleBuyClick} disabled={paying}
+              style={{ display:'block', width:'100%', padding:13, background:C.gd, color:C.ch, border:'none', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', opacity: paying ? 0.7 : 1, marginBottom:10 }}>
+              {paying ? 'Боловсруулж байна...' : danDone ? 'Premium ашиглах' : 'DAN баталгаажуулж, Premium авах'}
+            </button>
+            <div style={{ textAlign:'center', fontSize:12, color:'rgba(247,242,233,0.5)' }}>Хэдийд ч цуцалж болно</div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Мэргэшсэн worker cards ── */
+function MergejiltenTab() {
+  const [workers, setWorkers] = useState([]);
+  const [search, setSearch] = useState('');
+
   useEffect(() => {
-    const q = query(collection(db, 'users'));
-    return onSnapshot(q, snap => {
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setWorkers(all.filter(u => u.zovshoorol === true));
-      setLoading(false);
+    return onSnapshot(query(collection(db,'users')), snap => {
+      setWorkers(snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.zovshoorol===true));
     });
   }, []);
 
-  // Load ratings
-  useEffect(() => {
-    if (!workers.length) return;
-    const allRatings = {};
-    const unsubs = ['jobs','workers','internships','courses'].map(col =>
-      onSnapshot(query(collection(db, col)), snap => {
-        snap.docs.forEach(d => {
-          const data = d.data();
-          if (!data.uid || !data.ratings?.length) return;
-          if (!allRatings[data.uid]) allRatings[data.uid] = [];
-          allRatings[data.uid] = allRatings[data.uid].filter(r => r._postId !== d.id);
-          data.ratings.forEach(r => allRatings[data.uid].push({ ...r, _postId: d.id }));
-        });
-        const map = {};
-        Object.entries(allRatings).forEach(([uid, ratings]) => {
-          const avg = ratings.reduce((s,r)=>s+r.stars,0)/ratings.length;
-          map[uid] = { avg: parseFloat(avg.toFixed(1)), count: ratings.length };
-        });
-        setRatingsMap(m => ({...m,...map}));
-      })
-    );
-    return () => unsubs.forEach(u => u());
-  }, [workers.length]);
+  const filtered = workers.filter(w => {
+    if (!search) return true;
+    return [w.ner,w.ovog,w.chiglel,w.chadvar].some(v=>(v||'').toLowerCase().includes(search.toLowerCase()));
+  });
 
-  const handleBuy = async (plan) => {
-    if (paying) return;
+  return (
+    <div style={{ padding:16 }}>
+      <div style={{ background:C.pp, border:`1px solid ${C.hl}`, borderRadius:10, padding:'11px 14px', display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+        <svg style={{width:18,height:18,color:C.sl,flexShrink:0}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Нэр, чиглэл..."
+          style={{ flex:1, border:'none', outline:'none', fontSize:14, color:C.ink, background:'transparent' }}/>
+      </div>
+      {filtered.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'40px 0', color:C.sl }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>🔍</div>
+          <div style={{ fontSize:14 }}>Мэргэшсэн ажилтан олдсонгүй</div>
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {filtered.map(w => (
+            <div key={w.id} style={{ background:C.pp, border:`1px solid ${C.hls}`, borderRadius:12, padding:14, display:'flex', gap:12, alignItems:'center' }}>
+              <div style={{ width:44, height:44, borderRadius:'50%', background:C.gd, color:C.ch, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Source Serif 4',serif", fontSize:18, fontWeight:500, flexShrink:0, overflow:'hidden' }}>
+                {w.photoURL ? <img src={w.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : (w.ner||'?')[0]}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:14, fontWeight:500, color:C.ch, marginBottom:2 }}>
+                  {w.ner ? `${w.ovog||''} ${w.ner}`.trim() : '—'}
+                </div>
+                {w.chiglel && <div style={{ fontSize:12, color:C.sl, marginBottom:4 }}>{w.chiglel}</div>}
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                  <span style={{ fontSize:10, background:C.vg, color:C.pp, padding:'2px 8px', borderRadius:99, fontWeight:500 }}>✓ Баталгаажсан</span>
+                  {w.zэрэг && <span style={{ fontSize:10, background:C.gd, color:C.ch, padding:'2px 8px', borderRadius:99, fontWeight:500 }}>🏅 {w.zэрэг}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main export ── */
+export default function ProSection() {
+  const { profile, user } = useAuth();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState('premium');
+  const [paying, setPaying] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleBuy = async () => {
     const bal = profile?.balance || 0;
-    if (bal < plan.price) {
-      alert(`Үлдэгдэл хүрэлцэхгүй.\nШаардлагатай: ${fmt(plan.price)}\nТаны үлдэгдэл: ${fmt(bal)}`);
+    if (bal < 39000) {
+      alert(`Үлдэгдэл хүрэлцэхгүй.\nШаардлагатай: ₮39,000\nТаны үлдэгдэл: ₮${bal.toLocaleString()}`);
       return;
     }
-    if (!window.confirm(`${plan.name} багцыг ${fmt(plan.price)}/сар идэвхжүүлэх үү?`)) return;
-    setPaying(plan.key);
+    if (!window.confirm('Premium багцыг ₮39,000/сар идэвхжүүлэх үү?')) return;
+    setPaying(true);
     try {
       const { runTransaction, doc: fd, increment } = await import('firebase/firestore');
       const premiumUntil = new Date(Date.now() + 30*24*60*60*1000);
       await runTransaction(db, async tx => {
         const uRef = fd(db,'users',user.uid);
         const snap = await tx.get(uRef);
-        if ((snap.data().balance||0) < plan.price) throw new Error('Үлдэгдэл хүрэлцэхгүй');
-        tx.update(uRef,{ balance: increment(-plan.price), premiumPlan: plan.key, premiumUntil });
+        if ((snap.data().balance||0) < 39000) throw new Error('Үлдэгдэл хүрэлцэхгүй');
+        tx.update(uRef, { balance: increment(-39000), premiumPlan:'pro', premiumUntil });
       });
       await addDoc(collection(db,'transactions'),{
-        uid:user.uid, type:'zarlaga', amount:plan.price,
-        note:`Premium ${plan.name} багц`, createdAt:serverTimestamp(),
+        uid:user.uid, type:'zarlaga', amount:39000,
+        note:'Premium багц', createdAt:serverTimestamp(),
       });
-      await refreshProfile();
-      setSuccess(plan.key);
-    } catch(err){ alert(err.message||'Алдаа гарлаа'); }
-    setPaying(null);
+      setSuccess(true);
+    } catch(e) { alert(e.message||'Алдаа гарлаа'); }
+    setPaying(false);
   };
 
-  const filtered = workers.filter(w => {
-    const s = search.toLowerCase();
-    const degMatch = filterDegree==='Бүгд' || w.zэрэг===filterDegree;
-    const txtMatch = !s || [w.ner,w.ovog,w.chiglel,w.chadvar].some(v=>(v||'').toLowerCase().includes(s));
-    return degMatch && txtMatch;
-  }).sort((a,b)=>(ratingsMap[b.id]?.avg||0)-(ratingsMap[a.id]?.avg||0));
-
   return (
-    <div style={{background:"var(--parchment)",minHeight:"100%"}} className="p-4 ">
-      {/* Header */}
-      <div className="mb-8 animate-fade-up">
-        <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
-        <h1 className="text-3xl font-display font-bold text-gray-800 mb-2">Мэргэжилтэн & Premium</h1>
-        <p className="text-gray-400">Баталгаажсан мэргэжилтнүүд болон давуу эрхийн тариф</p>
-      </div>
-
+    <div style={{ display:'flex', flexDirection:'column', minHeight:'100%', background:C.pg }}>
       {/* Tabs */}
-      <div className="flex gap-1 bg-surf-100 rounded-xl p-1 mb-8 animate-fade-up-delay w-fit">
+      <div style={{ display:'flex', background:C.pp, borderBottom:`1px solid ${C.hls}`, flexShrink:0 }}>
         {[
-          { key:'premium', label:'💎 Premium' },
-          { key:'mergejilten', label:'🏅 Мэргэшсэн ажилтан' },
+          { key:'premium',     label:'💎 Premium' },
+          { key:'mergejilten', label:'🏅 Мэргэшсэн' },
         ].map(t => (
           <button key={t.key} onClick={()=>setTab(t.key)}
-            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-              tab===t.key ? 'bg-white text-brand-600 shadow-sm border border-surf-200' : 'text-gray-400 hover:text-gray-600'
-            }`}>
+            style={{ flex:1, padding:'13px 8px', fontSize:13, fontWeight: tab===t.key ? 600 : 500,
+              color: tab===t.key ? C.ch : C.sl, background:'none', border:'none', cursor:'pointer',
+              borderBottom: tab===t.key ? `2.5px solid ${C.gd}` : '2.5px solid transparent',
+              transition:'all .15s' }}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── PREMIUM TAB ── */}
-      {tab==='premium' && (
-        <div className="animate-fade-up">
-          {/* Active plan */}
-          {isActive && (
-            <div className="mb-8 card rounded-2xl px-6 py-4 border border-brand-200 bg-brand-50 flex items-center gap-4">
-              <div className="text-2xl">{PLANS.find(p=>p.key===currentPlan)?.icon}</div>
-              <div className="flex-1">
-                <div className="font-display font-bold text-brand-700 text-lg">
-                  {PLANS.find(p=>p.key===currentPlan)?.name} Premium идэвхтэй 💎
-                </div>
-                {until && <div className="text-brand-500 text-sm">{new Date(until).toLocaleDateString('mn-MN')} хүртэл хүчинтэй</div>}
-              </div>
-              <span className="text-xs bg-brand-500 text-white px-3 py-1.5 rounded-full font-bold">✅ Идэвхтэй</span>
-            </div>
-          )}
-
-          {/* Plans */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
-            {PLANS.map(plan => {
-              const isCurrent = currentPlan===plan.key;
-              return (
-                <div key={plan.key}
-                  className={`card rounded-2xl flex flex-col relative overflow-hidden transition-all hover:shadow-lg ${
-                    plan.popular && !isCurrent ? 'ring-2 ring-brand-400 ring-offset-2' : ''
-                  }`}
-                  style={{ border:`2px solid ${isCurrent?'#2563EB':plan.popular?'#2563EB':'#E2ECF5'}` }}>
-                  {plan.popular && <div className="text-center text-xs font-bold py-2 bg-brand-500 text-white">⚡ Хамгийн алдартай</div>}
-                  <div className="p-6 flex flex-col flex-1">
-                    <div className="text-3xl mb-2">{plan.icon}</div>
-                    <div className="font-display font-bold text-xl text-gray-800 mb-1">{plan.name}</div>
-                    <div className="flex items-end gap-1 mb-5">
-                      <span className="text-3xl font-display font-bold text-gray-800">{fmt(plan.price)}</span>
-                      <span className="text-gray-400 text-sm mb-1">/сар</span>
-                    </div>
-                    <div className="space-y-2 flex-1 mb-5">
-                      {plan.features.map(f => (
-                        <div key={f} className="flex items-start gap-2 text-sm text-gray-700">
-                          <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
-                          {f}
-                        </div>
-                      ))}
-                      {plan.notFeatures.map(f => (
-                        <div key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                          {f}
-                        </div>
-                      ))}
-                    </div>
-                    {isCurrent ? (
-                      <div className="w-full text-center py-3 rounded-xl text-sm font-bold bg-brand-100 text-brand-600">✅ Одоогийн багц</div>
-                    ) : success===plan.key ? (
-                      <div className="w-full text-center py-3 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-600">🎉 Амжилттай!</div>
-                    ) : (
-                      <button onClick={()=>handleBuy(plan)} disabled={!!paying}
-                        className={`w-full font-bold py-3 rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center ${
-                          plan.popular ? 'bg-brand-500 hover:bg-brand-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                        }`}>
-                        {paying===plan.key ? <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin"/> : `${plan.name} идэвхжүүлэх`}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Balance + link */}
-          <div className="bg-surf-50 border border-surf-200 rounded-2xl px-5 py-4 flex items-center gap-3">
-            <span className="text-xl">💳</span>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-gray-700">Таны үлдэгдэл: {fmt(profile?.balance||0)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">Данс цэнэглэхийн тулд Санхүү хэсэгт очно уу</div>
-            </div>
-            <button onClick={()=>navigate('/sanhuu')}
-              className="text-xs text-brand-500 font-bold border border-brand-200 bg-brand-50 px-3 py-1.5 rounded-xl hover:bg-brand-100 transition">
-              Санхүү →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── МЭРГЭШСЭН TAB ── */}
-      {tab==='mergejilten' && (
-        <div className="animate-fade-up">
-          {/* Search & filter */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-              <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Нэр, чиглэл, чадвараар хайх..." className="input-base pl-9"/>
-            </div>
-            <select value={filterDegree} onChange={e=>setFilterDegree(e.target.value)} className="input-base sm:w-56">
-              <option value="Бүгд">Бүх зэрэг</option>
-              {DEGREES.map(d=><option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin"/></div>
-          ) : filtered.length === 0 ? (
-            <div className="card rounded-2xl p-12 text-center text-gray-300">
-              <div className="text-4xl mb-3">🔍</div>
-              <p>Мэргэшсэн ажилтан олдсонгүй</p>
+      {/* Tab content */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflowY:'auto' }}>
+        {tab === 'premium' && (
+          success ? (
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'0 32px', textAlign:'center' }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
+              <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:22, fontWeight:500, color:C.ch, marginBottom:8 }}>Амжилттай!</div>
+              <div style={{ fontSize:13, color:C.sl, marginBottom:24 }}>Premium багц идэвхжлээ. Бүх боломжийг ашиглаарай.</div>
+              <button onClick={()=>setSuccess(false)} style={{ padding:'12px 28px', background:C.ch, color:C.pg, border:'none', borderRadius:8, fontSize:14, cursor:'pointer' }}>Буцах</button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {filtered.map(w => {
-                const r = ratingsMap[w.id];
-                return (
-                  <button key={w.id} onClick={()=>setSelected(w)}
-                    className="card card-hover rounded-2xl p-5 text-left border border-surf-200 flex flex-col gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">
-                        {w.photoURL
-                          ? <img src={w.photoURL} alt="" className="w-full h-full object-cover"/>
-                          : <span className="font-bold text-brand-600 text-base">{(w.ner||'?')[0].toUpperCase()}</span>}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-display font-bold text-gray-800 text-sm">
-                          {w.ner ? `${w.ovog||''} ${w.ner}`.trim() : '—'}
-                        </div>
-                        {r && r.count > 0 && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <StarDisplay rating={r.avg} size="sm"/>
-                            <span className="text-xs text-gray-400">{r.avg} ({r.count})</span>
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {w.zэрэг && <span className="text-xs bg-teal-50 border border-teal-200 text-teal-700 px-2 py-0.5 rounded-full">🏅 {w.zэрэг}</span>}
-                          {w.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{w.chiglel}</span>}
-                        </div>
-                      </div>
-                    </div>
-                    {w.chadvar && <p className="text-xs text-gray-500 line-clamp-2">{w.chadvar}</p>}
-                    {(w.tsalin || w.tsagiin_huls) && (
-                      <div className="flex gap-3">
-                        {w.tsalin && <span className="text-xs text-emerald-700 font-semibold">💰 {w.tsalin}₮/сар</span>}
-                        {w.tsagiin_huls && <span className="text-xs text-emerald-700 font-semibold">⏱ {w.tsagiin_huls}₮/цаг</span>}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Detail modal */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setSelected(null)}/>
-          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:z-10 animate-fade-up border border-surf-200 max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
-            <div className="flex justify-center pt-3 pb-1 sm:hidden"><div className="w-10 h-1 bg-gray-200 rounded-full"/></div>
-            <div className="flex items-start gap-4 px-6 pt-5 pb-4 border-b border-surf-100 flex-shrink-0">
-              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-brand-100 flex items-center justify-center flex-shrink-0">
-                {selected.photoURL
-                  ? <img src={selected.photoURL} alt="" className="w-full h-full object-cover"/>
-                  : <span className="font-bold text-brand-600 text-xl">{(selected.ner||'?')[0].toUpperCase()}</span>}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-display font-bold text-gray-800 text-lg">
-                  {selected.ner ? `${selected.ovog||''} ${selected.ner}`.trim() : '—'}
-                </h2>
-                {ratingsMap[selected.id]?.count > 0 && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <StarDisplay rating={ratingsMap[selected.id].avg} size="md"/>
-                    <span className="text-xs text-gray-400">{ratingsMap[selected.id].avg} ({ratingsMap[selected.id].count} үнэлгээ)</span>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {selected.zэрэг && <span className="text-xs bg-teal-50 border border-teal-200 text-teal-700 px-2 py-0.5 rounded-full">🏅 {selected.zэрэг}</span>}
-                  {selected.chiglel && <span className="text-xs bg-brand-50 border border-brand-100 text-brand-600 px-2 py-0.5 rounded-full">{selected.chiglel}</span>}
-                </div>
-              </div>
-              <button onClick={()=>setSelected(null)} className="text-gray-300 hover:text-gray-500 transition p-1 flex-shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2.5">
-              {[
-                {label:'Чадвар',        value:selected.chadvar},
-                {label:'Туршлага',      value:selected.turshlaga},
-                {label:'Сарын цалин',   value:selected.tsalin   ? `${selected.tsalin}₮/сар`  : null},
-                {label:'Цагийн хөлс',   value:selected.tsagiin_huls ? `${selected.tsagiin_huls}₮/цаг` : null},
-                {label:'Хаяг',          value:selected.hayg},
-                {label:'Утас',          value:selected.utas},
-                {label:'Нэмэлт',        value:selected.nemelt},
-                {label:'Диплом дугаар', value:selected.surgaltin_gazar},
-              ].filter(r=>r.value).map(row=>(
-                <div key={row.label} className="bg-surf-50 rounded-xl px-4 py-3">
-                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">{row.label}</div>
-                  <div className="text-gray-700 text-sm whitespace-pre-wrap">{row.value}</div>
-                </div>
-              ))}
-              {selected.cert_url && (
-                <a href={selected.cert_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-teal-100 transition">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-                  Мэргэжлийн үнэмлэх харах
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+            <PremiumScreen onBack={()=>navigate(-1)} onBuy={handleBuy}/>
+          )
+        )}
+        {tab === 'mergejilten' && <MergejiltenTab/>}
+      </div>
     </div>
   );
 }
