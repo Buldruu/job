@@ -1,88 +1,111 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, writeBatch, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit,
+         onSnapshot, doc, updateDoc, writeBatch,
+         serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 const C = {
-  ch:'#1A2B4A', ch5:'#EEF1F6', pg:'#F7F2E9',
-  gd:'#C9A961', gdd:'#A8893F',
+  ch:'#1A2B4A', ch5:'#EEF1F6', pg:'#F7F2E9', pgd:'#EDE5D2',
+  gd:'#C9A961', gdd:'#A8893F', gd5:'#FAF1DC',
   sl:'#6B7280', sll:'#9CA3AF', hl:'#D9D2C2', hls:'#E8E2D2',
   pp:'#FFFFFF', ink:'#1F1F1F',
   vg:'#2D7A4F', vg5:'#EDF7F2',
-  red:'#DC2626', red5:'#FEF2F2',
 };
 
-/* ── Notification type icons + colors ── */
-const N_TYPES = {
-  sanal:     { icon:'📋', label:'Санал', color:'#EEF1F6' },
-  urilt:     { icon:'✉️', label:'Урилга', color:'#FAF1DC' },
-  payment:   { icon:'💳', label:'Төлбөр', color:'#EDF7F2' },
-  rating:    { icon:'⭐', label:'Үнэлгээ', color:'#FAF1DC' },
-  system:    { icon:'🔔', label:'Систем', color:'#EEF1F6' },
-  premium:   { icon:'💎', label:'Premium', color:'#FAF1DC' },
-  verified:  { icon:'✅', label:'Баталгаа', color:'#EDF7F2' },
+const TYPES = {
+  sanal:    { icon:'📋', bg:'#EEF1F6' },
+  urilt:    { icon:'✉️',  bg:'#FAF1DC' },
+  payment:  { icon:'💳', bg:'#EDF7F2' },
+  rating:   { icon:'⭐', bg:'#FAF1DC' },
+  premium:  { icon:'💎', bg:'#FAF1DC' },
+  verified: { icon:'✅', bg:'#EDF7F2' },
+  system:   { icon:'🔔', bg:'#EEF1F6' },
 };
 
 function timeAgo(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const diff = (Date.now() - d) / 1000;
-  if (diff < 60)   return 'Сая';
-  if (diff < 3600) return `${Math.floor(diff/60)} мин`;
-  if (diff < 86400)return `${Math.floor(diff/3600)} цаг`;
-  if (diff < 604800)return `${Math.floor(diff/86400)} өдөр`;
+  const s = (Date.now() - d) / 1000;
+  if (s < 60)    return 'Сая';
+  if (s < 3600)  return `${Math.floor(s/60)} мин`;
+  if (s < 86400) return `${Math.floor(s/3600)} цаг`;
+  if (s < 604800)return `${Math.floor(s/86400)} өдөр`;
   return d.toLocaleDateString('mn-MN');
 }
 
-/* ── Notification item ── */
-function NItem({ notif, onRead }) {
-  const t = N_TYPES[notif.type] || N_TYPES.system;
+/* ── Single notification row ── */
+function NRow({ n, onRead }) {
+  const t = TYPES[n.type] || TYPES.system;
   return (
-    <div onClick={()=>!notif.read && onRead(notif.id)}
-      style={{ display:'flex', gap:12, padding:'13px 16px', background: notif.read ? C.pp : '#FAFBFF', borderBottom:`1px solid ${C.hls}`, cursor: notif.read ? 'default' : 'pointer', position:'relative' }}>
-      {/* Unread dot */}
-      {!notif.read && (
-        <div style={{ position:'absolute', left:6, top:'50%', transform:'translateY(-50%)', width:6, height:6, borderRadius:'50%', background:C.ch }}/>
+    <div onClick={()=>!n.read && onRead(n.id)}
+      style={{
+        display:'flex', gap:12, padding:'14px 16px',
+        background: n.read ? C.pp : '#F5F7FF',
+        borderBottom:`1px solid ${C.hls}`,
+        cursor: n.read ? 'default' : 'pointer',
+        position:'relative',
+        transition:'background .2s',
+      }}>
+      {/* Unread indicator */}
+      {!n.read && (
+        <div style={{ position:'absolute', left:5, top:'50%', transform:'translateY(-50%)', width:5, height:5, borderRadius:'50%', background:C.ch }}/>
       )}
       {/* Icon */}
-      <div style={{ width:40, height:40, borderRadius:'50%', background:t.color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>
+      <div style={{ width:42, height:42, borderRadius:'50%', background:t.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
         {t.icon}
       </div>
-      {/* Content */}
+      {/* Text */}
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:8, marginBottom:3 }}>
-          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:13, fontWeight:500, color:C.ch, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {notif.title}
+        <div style={{ display:'flex', justifyContent:'space-between', gap:8, marginBottom:3 }}>
+          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:13, fontWeight: n.read ? 400 : 600, color:C.ch, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {n.title}
           </div>
-          <div style={{ fontSize:10, color:C.sll, flexShrink:0 }}>{timeAgo(notif.createdAt)}</div>
+          <div style={{ fontSize:10, color:C.sll, flexShrink:0 }}>{timeAgo(n.createdAt)}</div>
         </div>
-        <div style={{ fontSize:12, color:C.sl, lineHeight:1.4 }}>{notif.body}</div>
+        <div style={{ fontSize:12, color:C.sl, lineHeight:1.45 }}>{n.body}</div>
       </div>
     </div>
   );
 }
 
-/* ── Notifications Panel ── */
+/* ── Notifications panel ── */
 export function NotificationsPanel({ onClose }) {
   const { user } = useAuth();
   const [notifs, setNotifs] = useState([]);
-  const [filter, setFilter] = useState('all'); // all | unread
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter]   = useState('all');
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
+    // Simple query - no composite index needed
     const q = query(
       collection(db, 'notifications'),
       where('uid', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(80)
     );
-    return onSnapshot(q, snap => {
-      setNotifs(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-    });
+    return onSnapshot(q,
+      snap => {
+        const list = snap.docs
+          .map(d => ({ id:d.id, ...d.data() }))
+          .sort((a,b) => {
+            const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+            const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+            return tb - ta; // newest first
+          });
+        setNotifs(list);
+        setLoading(false);
+      },
+      err => {
+        console.error('Notifications error:', err);
+        setLoading(false);
+      }
+    );
   }, [user]);
 
   const markRead = async (id) => {
-    await updateDoc(doc(db, 'notifications', id), { read:true });
+    try { await updateDoc(doc(db,'notifications',id), { read:true }); } catch(e) {}
   };
 
   const markAllRead = async () => {
@@ -90,36 +113,41 @@ export function NotificationsPanel({ onClose }) {
     notifs.filter(n=>!n.read).forEach(n => {
       batch.update(doc(db,'notifications',n.id), { read:true });
     });
-    await batch.commit();
+    try { await batch.commit(); } catch(e) {}
   };
 
-  const unreadCount = notifs.filter(n=>!n.read).length;
-  const shown = filter === 'unread' ? notifs.filter(n=>!n.read) : notifs;
+  const unread = notifs.filter(n=>!n.read).length;
+  const shown  = filter === 'unread' ? notifs.filter(n=>!n.read) : notifs;
 
   return (
-    <div style={{ position:'absolute', inset:0, zIndex:50, display:'flex', flexDirection:'column' }}>
+    <div style={{ position:'absolute', inset:0, zIndex:50 }}>
       {/* Backdrop */}
-      <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.35)' }} onClick={onClose}/>
+      <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)' }} onClick={onClose}/>
 
-      {/* Panel slides from right */}
-      <div style={{ position:'absolute', top:0, right:0, bottom:0, width:'100%', maxWidth:480, background:C.pp, display:'flex', flexDirection:'column', boxShadow:'-4px 0 24px rgba(0,0,0,0.12)', animation:'slideInRight .22s ease-out' }}>
+      {/* Slide-in panel */}
+      <div style={{
+        position:'absolute', top:0, right:0, bottom:0, width:'100%', maxWidth:480,
+        background:C.pp, display:'flex', flexDirection:'column',
+        boxShadow:'-4px 0 32px rgba(0,0,0,0.15)',
+        animation:'slideInRight .2s ease-out',
+      }}>
 
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'13px 16px', background:C.pp, borderBottom:`1px solid ${C.hls}`, flexShrink:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:C.ch, display:'flex', padding:0 }}>
               <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
-            <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch }}>
+            <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch, display:'flex', alignItems:'center', gap:8 }}>
               Мэдэгдэл
-              {unreadCount > 0 && (
-                <span style={{ marginLeft:8, fontSize:12, background:C.ch, color:C.pp, padding:'1px 7px', borderRadius:99, fontFamily:"'Manrope',sans-serif", fontWeight:600 }}>
-                  {unreadCount}
+              {unread > 0 && (
+                <span style={{ fontSize:11, background:C.ch, color:C.pp, padding:'1px 7px', borderRadius:99, fontFamily:"'Manrope',sans-serif", fontWeight:700 }}>
+                  {unread}
                 </span>
               )}
             </div>
           </div>
-          {unreadCount > 0 && (
+          {unread > 0 && (
             <button onClick={markAllRead}
               style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:C.ch, fontWeight:500 }}>
               Бүгдийг уншсан
@@ -128,40 +156,62 @@ export function NotificationsPanel({ onClose }) {
         </div>
 
         {/* Filter tabs */}
-        <div style={{ display:'flex', borderBottom:`1px solid ${C.hls}`, flexShrink:0 }}>
-          {[['all','Бүгд'],['unread','Уншаагүй']].map(([k,l]) => (
+        <div style={{ display:'flex', borderBottom:`1px solid ${C.hls}`, flexShrink:0, background:C.pp }}>
+          {[
+            { k:'all',    l:`Бүгд${notifs.length>0?` (${notifs.length})`:''}` },
+            { k:'unread', l:`Уншаагүй${unread>0?` (${unread})`:''}` },
+          ].map(({k,l}) => (
             <button key={k} onClick={()=>setFilter(k)}
-              style={{ flex:1, padding:'10px', fontSize:13, fontWeight: filter===k ? 600 : 500, color: filter===k ? C.ch : C.sl, background:'none', border:'none', cursor:'pointer', borderBottom: filter===k ? `2.5px solid ${C.gd}` : '2.5px solid transparent' }}>
-              {l} {k==='unread' && unreadCount > 0 ? `(${unreadCount})` : ''}
+              style={{ flex:1, padding:'11px 8px', fontSize:13, fontWeight:filter===k?600:500, color:filter===k?C.ch:C.sl, background:'none', border:'none', cursor:'pointer', borderBottom:filter===k?`2.5px solid ${C.gd}`:'2.5px solid transparent' }}>
+              {l}
             </button>
           ))}
         </div>
 
         {/* List */}
         <div style={{ flex:1, overflowY:'auto', background:C.pg }}>
-          {shown.length === 0 ? (
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', padding:'40px 0', textAlign:'center' }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>🔔</div>
-              <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:16, color:C.ch, marginBottom:6 }}>Мэдэгдэл байхгүй</div>
-              <div style={{ fontSize:13, color:C.sl }}>Шинэ мэдэгдэл ирэхэд энд харагдана</div>
+          {loading ? (
+            <div style={{ display:'flex', justifyContent:'center', padding:'48px 0' }}>
+              <div style={{ width:24, height:24, border:`2px solid ${C.ch}`, borderTopColor:'transparent', borderRadius:'50%' }} className="animate-spin"/>
+            </div>
+          ) : shown.length === 0 ? (
+            /* ── Empty state ── */
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:300, padding:'48px 32px', textAlign:'center' }}>
+              <div style={{ width:64, height:64, background:C.ch5, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, fontSize:28 }}>
+                🔔
+              </div>
+              <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch, marginBottom:8 }}>
+                {filter === 'unread' ? 'Уншаагүй мэдэгдэл байхгүй' : 'Мэдэгдэл байхгүй'}
+              </div>
+              <div style={{ fontSize:13, color:C.sl, lineHeight:1.5, maxWidth:260 }}>
+                {filter === 'unread'
+                  ? 'Бүх мэдэгдлийг уншсан байна'
+                  : 'Зар нийтлэх, Premium авах, үнэлгээ ирэх зэрэг үйлдлийн дараа мэдэгдэл энд харагдана'}
+              </div>
+              {filter === 'unread' && notifs.length > 0 && (
+                <button onClick={()=>setFilter('all')}
+                  style={{ marginTop:16, padding:'9px 20px', background:C.ch, color:C.pp, border:'none', borderRadius:8, fontSize:13, cursor:'pointer' }}>
+                  Бүгдийг харах
+                </button>
+              )}
             </div>
           ) : (
-            shown.map(n => <NItem key={n.id} notif={n} onRead={markRead}/>)
+            shown.map(n => <NRow key={n.id} n={n} onRead={markRead}/>)
           )}
         </div>
       </div>
 
       <style>{`
         @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to   { transform: translateX(0);    opacity: 1; }
+          from { transform:translateX(100%); opacity:0; }
+          to   { transform:translateX(0);   opacity:1; }
         }
       `}</style>
     </div>
   );
 }
 
-/* ── Bell icon with badge (for appbar) ── */
+/* ── Bell with unread badge ── */
 export function NotificationBell({ onClick }) {
   const { user } = useAuth();
   const [count, setCount] = useState(0);
@@ -169,12 +219,12 @@ export function NotificationBell({ onClick }) {
   useEffect(() => {
     if (!user) return;
     const q = query(
-      collection(db, 'notifications'),
-      where('uid', '==', user.uid),
-      where('read', '==', false),
+      collection(db,'notifications'),
+      where('uid','==',user.uid),
+      where('read','==',false),
       limit(99)
     );
-    return onSnapshot(q, snap => setCount(snap.size));
+    return onSnapshot(q, snap => setCount(snap.size), ()=>{});
   }, [user]);
 
   return (
@@ -185,7 +235,7 @@ export function NotificationBell({ onClick }) {
         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
       </svg>
       {count > 0 && (
-        <div style={{ position:'absolute', top:4, right:4, minWidth:16, height:16, background:'#DC2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', border:`1.5px solid ${C.pp}` }}>
+        <div style={{ position:'absolute', top:3, right:3, minWidth:16, height:16, background:'#DC2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', border:`2px solid ${C.pp}` }}>
           {count > 9 ? '9+' : count}
         </div>
       )}
@@ -193,11 +243,15 @@ export function NotificationBell({ onClick }) {
   );
 }
 
-/* ── Helper: create notification from code ── */
+/* ── Helper to create a notification ── */
 export async function createNotification(uid, { type='system', title, body }) {
-  await addDoc(collection(db, 'notifications'), {
-    uid, type, title, body, read:false, createdAt:serverTimestamp(),
-  });
+  try {
+    await addDoc(collection(db,'notifications'), {
+      uid, type, title, body, read:false, createdAt:serverTimestamp(),
+    });
+  } catch(e) {
+    console.error('createNotification error:', e);
+  }
 }
 
 export default NotificationsPanel;
