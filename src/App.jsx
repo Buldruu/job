@@ -14,6 +14,7 @@ import EscrowDetail from './pages/EscrowDetail';
 import Admin from './pages/Admin';
 import Mergejilten from './pages/Mergejilten';
 import Premium from './pages/Premium';
+import Chat from './pages/Chat';
 import ProSection from './pages/ProSection';
 
 function Spinner() {
@@ -55,6 +56,7 @@ export default function App() {
           <Route index element={<Dashboard/>}/>
           <Route path="ajil"           element={<JobList type="ajil"/>}/>
           <Route path="ajiltan"        element={<JobList type="ajiltan"/>}/>
+          <Route path="chat"           element={<Chat/>}/>
           <Route path="premium"         element={<ProSection/>}/>
           <Route path="surgalt"        element={<JobList type="surgalt"/>}/>
           <Route path="mergejilten"    element={<Mergejilten/>}/>

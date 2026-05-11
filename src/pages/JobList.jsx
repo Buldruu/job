@@ -7,8 +7,10 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createNotification } from '../components/Notifications';
+import { startChat } from './Chat';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import AddressInput from '../components/AddressInput';
 import { StarDisplay, StarPicker } from '../components/RatingStars';
 
@@ -259,10 +261,13 @@ export default function JobList({ type }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    // Check post limit
+    // Check post limit: free=10, premium=unlimited
+    const isPremium = profile?.premiumPlan && profile.premiumPlan !== 'free' &&
+      profile.premiumUntil &&
+      ((profile.premiumUntil?.toDate?.() || new Date(profile.premiumUntil)) > new Date());
+    const FREE_LIMIT = 10;
     const myPosts = items.filter(i => i.uid === user?.uid);
-    const plan = getPlan(profile);
-    const limit = PREMIUM_LIMITS[plan].posts;
+    const limit = isPremium ? 999 : FREE_LIMIT;
     if (myPosts.length >= limit) {
       alert(plan === 'free'
         ? `Үнэгүй багцад ${PREMIUM_LIMITS.free.posts} зар нэмэх боломжтой.\nИлүү зар нэмэхийн тулд Premium авна уу.`
@@ -800,6 +805,23 @@ export default function JobList({ type }) {
           {/* Poster profile — expanded with report */}
           {selectedOwner && (
             <PosterCard owner={selectedOwner} isPremium={selected._isPremiumPoster} postUtas={selected.utas} isOwnPost={selected.uid === user?.uid} postId={selected.id} db={db} user={user}/>
+          )}
+          {/* Chat button for хувь хүн posts */}
+          {selected.uid && selected.uid !== user?.uid && (
+            <div style={{ marginTop:12 }}>
+              <button
+                onClick={async () => {
+                  const chatId = await startChat(user.uid, selected.uid, selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected));
+                  navigate('/chat');
+                  setSelected(null);
+                }}
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'12px', background:'var(--charter-blue)', color:'var(--parchment)', border:'none', borderRadius:8, fontSize:14, fontWeight:500, cursor:'pointer' }}>
+                <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Ажилд авах · Чат эхлүүлэх
+              </button>
+            </div>
           )}
         </Modal>
       )}
