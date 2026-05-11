@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { createNotification } from '../components/Notifications';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -333,6 +334,13 @@ export default function ProSection() {
         note:'Premium багц', createdAt:serverTimestamp(),
       });
       setSuccess(true);
+      try {
+        await createNotification(user.uid, {
+          type:'premium',
+          title:'Premium идэвхжлээ! 💎',
+          body:'Таны Premium багц амжилттай идэвхжлээ. Бүх боломжийг ашиглаарай.',
+        });
+      } catch(e) {}
     } catch(e) { alert(e.message||'Алдаа гарлаа'); }
     setPaying(false);
   };

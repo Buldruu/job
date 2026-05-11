@@ -6,6 +6,7 @@ import {
   updateDoc, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { createNotification } from '../components/Notifications';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
@@ -443,7 +444,7 @@ export default function JobList({ type }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGa</p>
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
           <h1 className="text-2xl font-display font-bold text-gray-800">{cfg.title}</h1>
         </div>
         <button onClick={() => setShowForm(true)}

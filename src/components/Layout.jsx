@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import BrandModal from './BrandModal';
 import HaGaLogo from './HaGaLogo';
 import AIChat from './AIChat';
+import { NotificationBell, NotificationsPanel } from './Notifications';
 
 /* ── 5 bottom tabs — HAGA spec ── */
 const TABS = [
@@ -22,6 +23,7 @@ export default function Layout() {
   const { profile, user } = useAuth();
   const [brand, setBrand] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
 
   const name    = profile?.ner || profile?.ovog || user?.email?.split('@')[0] || 'Хэрэглэгч';
   const photo   = profile?.photoURL;
@@ -134,6 +136,9 @@ export default function Layout() {
         </div>
       )}
 
+      {showNotif && (
+        <NotificationsPanel onClose={()=>setShowNotif(false)}/>
+      )}
       {brand && <BrandModal onClose={()=>setBrand(false)}/>}
       <AIChat/>
     </div>
