@@ -121,14 +121,12 @@ export default function Dashboard() {
   const name = profile?.ner || user?.email?.split('@')[0] || 'Та';
   const cats = MAIN_CATS.slice(0, 6);
 
-  /* Navigate to ajiltan with filter */
+  /* Navigate to ajiltan with URL search params */
   const goFilter = (mainCat, sub = null) => {
-    navigate('/ajiltan', {
-      state: {
-        filterMain: mainCat,
-        filterSub: sub || '',
-      },
-    });
+    const params = new URLSearchParams();
+    if (mainCat) params.set('main', mainCat);
+    if (sub)     params.set('sub', sub);
+    navigate(`/ajiltan?${params.toString()}`);
   };
 
   /* Screen: Sub-category drill-down */

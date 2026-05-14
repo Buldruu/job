@@ -10,7 +10,7 @@ import { createNotification } from '../components/Notifications';
 import { startChat } from './Chat';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import AddressInput from '../components/AddressInput';
 import { StarDisplay, StarPicker } from '../components/RatingStars';
 
@@ -160,9 +160,14 @@ export default function JobList({ type }) {
   const [addStep, setAddStep] = useState(0); // 0=category, 1=details
   const [selected, setSelected] = useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
-  const [filterMain, setFilterMain] = useState(location?.state?.filterMain || '');   // level 1
-  const [filterSub,  setFilterSub]  = useState('');   // level 2
-  const [filterProf, setFilterProf] = useState('');   // level 3
+  // Filters come directly from URL — always in sync
+  const filterMain = searchParams.get('main') || '';
+  const filterSub  = searchParams.get('sub')  || '';
+  const filterProf = searchParams.get('prof') || '';
+
+  const setFilterMain = (v) => setSearchParams(p => { const n=new URLSearchParams(p); if(v) n.set('main',v); else n.delete('main'); n.delete('sub'); n.delete('prof'); return n; }, {replace:true});
+  const setFilterSub  = (v) => setSearchParams(p => { const n=new URLSearchParams(p); if(v) n.set('sub',v); else n.delete('sub'); n.delete('prof'); return n; }, {replace:true});
+  const setFilterProf = (v) => setSearchParams(p => { const n=new URLSearchParams(p); if(v) n.set('prof',v); else n.delete('prof'); return n; }, {replace:true});
   const [search, setSearch] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
   const [form, setForm] = useState({});
@@ -184,14 +189,7 @@ export default function JobList({ type }) {
   const [premiumFilter, setPremiumFilter] = useState(null);
   const [filterZarlagch, setFilterZarlagch] = useState(''); // 'Байгуулга'|'Хувь хүн'|''
 
-  // Re-apply filter when navigating from Dashboard with state
-  useEffect(() => {
-    if (location.state?.filterMain) {
-      setFilterMain(location.state.filterMain);
-      setFilterSub(location.state.filterSub || '');
-      setFilterProf('');
-    }
-  }, [location.key]); // location.key changes on every navigation
+  // URL is source of truth for filters — no extra effect needed
   const [filterSalaryMin, setFilterSalaryMin] = useState('');
 
   // Load business ads
@@ -401,7 +399,7 @@ export default function JobList({ type }) {
 
   const doSearch = () => setActiveSearch(search.trim());
   const resetFilters = () => {
-    setFilterMain(''); setFilterSub(''); setFilterProf('');
+    setSearchParams({}, {replace:true});
     setSearch(''); setActiveSearch('');
     setPremiumFilter(null); setFilterSalaryMin('');
   };
