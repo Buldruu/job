@@ -28,6 +28,8 @@ export default function Profile() {
     zэрэг:'', surgaltin_gazar:'', cert_url:'',
   });
   const [saving, setSaving] = useState(false);
+  const [portfolioFiles, setPortfolioFiles] = useState([]);
+  const [portfolioUploading, setPortfolioUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [certUploading, setCertUploading] = useState(false);
@@ -56,6 +58,7 @@ export default function Profile() {
       chiglel:        profile.chiglel        || '',
       tsalin:         profile.tsalin         || '',
       cv:             profile.cv             || '',
+      portfolio:      profile.portfolio      || [],
       nemelt:         profile.nemelt         || '',
       zэрэг:          profile.zэрэг          || '',
       surgaltin_gazar:profile.surgaltin_gazar|| '',
@@ -323,7 +326,7 @@ export default function Profile() {
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Чиглэл</label>
                 <ProfileChiglелSelect value={form.chiglel} onChange={v=>set('chiglel',v)}/>
               </div>
-              <Field label="Сарын цалин (₮/сар)" value={form.tsalin} onChange={v=>set('tsalin',v)} placeholder="1,500,000"/>
+              <Field label="Үйлчилгээний төлбөр (₮/сар)" value={form.tsalin} onChange={v=>set('tsalin',v)} placeholder="1,500,000"/>
               <Field label="Цагийн хөлс (₮/цаг)" value={form.tsagiin_huls} onChange={v=>set('tsagiin_huls',v)} placeholder="15,000"/>
               <Field label="Цагийн хөлс (₮/цаг)" value={form.tsagiin_huls} onChange={v=>set('tsagiin_huls',v)} placeholder="15,000"/>
             </div>
@@ -532,14 +535,14 @@ export default function Profile() {
 
           <div className="card rounded-2xl p-5 border border-surf-200">
             <h3 className="font-display font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <span>💰</span> Цалин болон хөлс
+              <span>💰</span> Үйлчилгээний төлбөр
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Сарын цалин (₮)</label>
                 <input type="text" value={form.tsalin} onChange={e=>set('tsalin',e.target.value)}
                   placeholder="1,500,000" className="input-base"/>
-                <p className="text-xs text-gray-400 mt-1">Хүссэн сарын цалин</p>
+                <p className="text-xs text-gray-400 mt-1">Үйлчилгээний төлбөр</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Цагийн хөлс (₮)</label>
@@ -548,6 +551,52 @@ export default function Profile() {
                 <p className="text-xs text-gray-400 mt-1">Нэг цагийн үнэ</p>
               </div>
             </div>
+          </div>
+
+          {/* Portfolio photos */}
+          <div style={{ background:'var(--paper)', border:'1px solid var(--hairline-soft)', borderRadius:12, padding:'16px' }}>
+            <h3 style={{ fontFamily:"'Source Serif 4',serif", fontWeight:500, color:'var(--charter-blue)', marginBottom:12, display:'flex', alignItems:'center', gap:8, margin:'0 0 12px' }}>
+              <span>📸</span> Хийсэн ажлын зургууд
+            </h3>
+            {/* Existing portfolio */}
+            {(form.portfolio||[]).length > 0 && (
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:10 }}>
+                {form.portfolio.map((url, i) => (
+                  <div key={i} style={{ position:'relative', aspectRatio:'1', borderRadius:8, overflow:'hidden' }}>
+                    <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                    <button
+                      type="button"
+                      onClick={()=>set('portfolio', form.portfolio.filter((_,j)=>j!==i))}
+                      style={{ position:'absolute', top:3, right:3, width:20, height:20, background:'rgba(0,0,0,0.6)', color:'#fff', border:'none', borderRadius:'50%', cursor:'pointer', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Upload button */}
+            <label style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, border:'2px dashed var(--hairline)', borderRadius:10, padding:'16px', cursor:'pointer', background:'var(--parchment)' }}>
+              <span style={{ fontSize:24 }}>+</span>
+              <span style={{ fontSize:12, color:'var(--steel)' }}>Зураг нэмэх (олон сонгож болно)</span>
+              <input type="file" accept="image/*" multiple className="hidden"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  setPortfolioUploading(true);
+                  const { ref: sRef, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                  const { storage } = await import('../firebase');
+                  const urls = await Promise.all(files.map(async (file) => {
+                    const r = sRef(storage, `portfolio/${user.uid}/${Date.now()}_${file.name}`);
+                    await uploadBytes(r, file);
+                    return getDownloadURL(r);
+                  }));
+                  set('portfolio', [...(form.portfolio||[]), ...urls]);
+                  setPortfolioUploading(false);
+                }}/>
+            </label>
+            {portfolioUploading && (
+              <div style={{ textAlign:'center', fontSize:12, color:'var(--steel)', marginTop:8 }}>Байршуулж байна...</div>
+            )}
           </div>
 
           <button onClick={handleSave} disabled={saving}

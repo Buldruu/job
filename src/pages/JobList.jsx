@@ -10,7 +10,7 @@ import { createNotification } from '../components/Notifications';
 import { startChat } from './Chat';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AddressInput from '../components/AddressInput';
 import { StarDisplay, StarPicker } from '../components/RatingStars';
 
@@ -157,9 +157,10 @@ export default function JobList({ type }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [addStep, setAddStep] = useState(0); // 0=category, 1=details
   const [selected, setSelected] = useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
-  const [filterMain, setFilterMain] = useState('');   // level 1
+  const [filterMain, setFilterMain] = useState(location?.state?.filterMain || '');   // level 1
   const [filterSub,  setFilterSub]  = useState('');   // level 2
   const [filterProf, setFilterProf] = useState('');   // level 3
   const [search, setSearch] = useState('');
@@ -831,13 +832,39 @@ export default function JobList({ type }) {
         <Modal onClose={()=>{setShowForm(false);setForm({});setCvFile(null);}}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-display font-bold text-gray-800">{cfg.addTitle}</h2>
-            <button onClick={()=>{setShowForm(false);setForm({});setCvFile(null);setPhotoFile(null);setVideoFile(null);}} className="text-gray-300 hover:text-gray-500 p-1 transition">
+            <button onClick={()=>{setShowForm(false);setForm({});setCvFile(null);setPhotoFile(null);setVideoFile(null);setAddStep(0);}} className="text-gray-300 hover:text-gray-500 p-1 transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
-          <form onSubmit={handleAdd} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+          {/* Step 0: Category selection */}
+          {addStep === 0 && (
+            <div style={{ padding:16, overflowY:'auto', flex:1 }}>
+              <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:20, fontWeight:500, color:'var(--charter-blue)', marginBottom:6 }}>
+                {type==='ajiltan' ? 'Ямар ажилтан хайж байна вэ?' : 'Ямар ажил хийлгэх вэ?'}
+              </div>
+              <div style={{ fontSize:12, color:'var(--steel)', marginBottom:14 }}>Ангилалаа сонгоно уу</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                {MAIN_CATS.map(cat => (
+                  <button key={cat} type="button"
+                    onClick={()=>{ setForm(p=>({...p, chiglel_main:cat, chiglel:''})); setAddStep(1); }}
+                    style={{
+                      background: form.chiglel_main===cat ? 'var(--charter-blue-50)' : 'var(--paper)',
+                      border: form.chiglel_main===cat ? '2px solid var(--charter-blue)' : '1px solid var(--hairline-soft)',
+                      borderRadius:12, padding:'12px 10px', display:'flex', flexDirection:'column',
+                      gap:5, minHeight:80, cursor:'pointer', textAlign:'left',
+                    }}>
+                    <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:13, fontWeight:500, color:'var(--charter-blue)', lineHeight:1.2 }}>{cat}</div>
+                    <div style={{ fontSize:10, color:'var(--steel)' }}>{Object.values(CHIGLEL_MAP[cat]||{}).flat().length} мэргэжил</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: Details form */}
+          {addStep > 0 && <form onSubmit={handleAdd} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
             {(type==='ajiltan'
               ? (form.zarlagch_turul==='Хувь хүн' ? cfg.fieldsPerson : cfg.fieldsOrg)
               : cfg.fields
@@ -976,7 +1003,7 @@ export default function JobList({ type }) {
               className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-btn flex items-center justify-center gap-2">
               {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Хадгалах'}
             </button>
-          </form>
+          </form>}
         </Modal>
       )}
     </div>
