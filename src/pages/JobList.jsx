@@ -182,7 +182,16 @@ export default function JobList({ type }) {
   const [editingRating, setEditingRating] = useState(false); // unlock to change
   const [premiumAds, setPremiumAds] = useState([]);
   const [premiumFilter, setPremiumFilter] = useState(null);
-  const [filterZarlagch, setFilterZarlagch] = useState(''); // 'Байгуулга'|'Хувь хүн'|'' // 'rated'|'featured'|'premium'
+  const [filterZarlagch, setFilterZarlagch] = useState(''); // 'Байгуулга'|'Хувь хүн'|''
+
+  // Re-apply filter when navigating from Dashboard with state
+  useEffect(() => {
+    if (location.state?.filterMain) {
+      setFilterMain(location.state.filterMain);
+      setFilterSub(location.state.filterSub || '');
+      setFilterProf('');
+    }
+  }, [location.key]); // location.key changes on every navigation
   const [filterSalaryMin, setFilterSalaryMin] = useState('');
 
   // Load business ads

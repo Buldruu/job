@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
-import { CHIGLEL_MAP, MAIN_CATS } from '../data/chiglel';
-import BrandModal from '../components/BrandModal';
+import { CHIGLEL_MAP, MAIN_CATS, getSubs } from '../data/chiglel';
 
-const C = { ch:'#1A2B4A', pg:'#F7F2E9', pgd:'#EDE5D2', gd:'#C9A961', gdd:'#A8893F', sl:'#6B7280', hl:'#D9D2C2', hls:'#E8E2D2', pp:'#FFFFFF', ink:'#1F1F1F' };
+const C = {
+  ch:'#1A2B4A', ch5:'#EEF1F6', pg:'#F7F2E9', pgd:'#EDE5D2',
+  gd:'#C9A961', gdd:'#A8893F',
+  sl:'#6B7280', sll:'#9CA3AF', hl:'#D9D2C2', hls:'#E8E2D2',
+  pp:'#FFFFFF', ink:'#1F1F1F',
+};
+
+const CAT_COUNTS = Object.fromEntries(
+  Object.entries(CHIGLEL_MAP).map(([k,v]) => [k, Object.values(v).flat().length])
+);
 
 const CAT_ICONS = {
   'Барилга, засвар':      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg>,
@@ -24,8 +30,63 @@ const CAT_ICONS = {
   'Аялал, спорт':          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>,
 };
 
-// All categories page
-function AllCats({ onSelect, onBack, counts }) {
+/* ── Sub-category drill-down screen ── */
+function SubCatScreen({ mainCat, onBack, onSelectSub }) {
+  const subs = getSubs(mainCat);
+  return (
+    <div style={{ background:C.pg, minHeight:'100%' }}>
+      {/* Appbar */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', background:C.pp, borderBottom:`1px solid ${C.hls}` }}>
+        <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', color:C.ch, display:'flex' }}>
+          <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch }}>{mainCat}</div>
+      </div>
+      {/* Breadcrumb */}
+      <div style={{ padding:'8px 16px 0', display:'flex', gap:6, fontSize:11, color:C.sl }}>
+        <span style={{ cursor:'pointer', color:C.sl }} onClick={onBack}>Бүх ангилал</span>
+        <span style={{ color:C.sll }}>›</span>
+        <strong style={{ color:C.ink }}>{mainCat}</strong>
+      </div>
+      {/* Main cat card */}
+      <div style={{ margin:'12px 16px', background:C.pp, border:`1px solid ${C.hls}`, borderRadius:12, padding:'14px 16px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+          <div style={{ color:C.ch, width:22, height:22 }}>{CAT_ICONS[mainCat]}</div>
+          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:16, color:C.ch, fontWeight:500 }}>{mainCat}</div>
+        </div>
+        <div style={{ fontSize:12, color:C.sl }}>Доорх дэд ангилалаас сонгоно уу</div>
+      </div>
+      {/* Sub-category list with gold bar */}
+      <div style={{ padding:'0 16px 8px' }}>
+        <div style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', color:C.gdd, fontWeight:500, marginBottom:10 }}>ДЭД АНГИЛАЛ</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {subs.map(sub => (
+            <button key={sub} onClick={()=>onSelectSub(sub)}
+              style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 14px 13px 16px', background:C.pp, border:`1px solid ${C.hls}`, borderRadius:10, cursor:'pointer', textAlign:'left', position:'relative' }}>
+              {/* Gold left bar */}
+              <div style={{ position:'absolute', left:0, top:6, bottom:6, width:3, background:C.gd, borderRadius:'0 2px 2px 0' }}/>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:500, color:C.ink, marginBottom:2 }}>{sub}</div>
+                <div style={{ fontSize:12, color:C.sl }}>
+                  {Object.values(CHIGLEL_MAP[mainCat]?.[sub] || {}).length || (CHIGLEL_MAP[mainCat]?.[sub]?.length || 0)} мэргэжил
+                </div>
+              </div>
+              <svg style={{width:16,height:16,color:C.sll}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          ))}
+          {/* Show all in this category */}
+          <button onClick={()=>onSelectSub(null)}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'12px', background:C.ch5, border:`1px solid ${C.ch}`, borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:500, color:C.ch, marginTop:4 }}>
+            Бүх {mainCat} зарыг харах →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── All categories screen ── */
+function AllCatsScreen({ onSelectMain, onBack }) {
   return (
     <div style={{ background:C.pg, minHeight:'100%' }}>
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', background:C.pp, borderBottom:`1px solid ${C.hls}` }}>
@@ -36,14 +97,14 @@ function AllCats({ onSelect, onBack, counts }) {
         <svg style={{width:22,height:22,color:C.ch}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </div>
       <div style={{ padding:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-        {MAIN_CATS.map(cat=>(
-          <button key={cat} onClick={()=>onSelect(cat)}
+        {MAIN_CATS.map(cat => (
+          <button key={cat} onClick={()=>onSelectMain(cat)}
             style={{ background:C.pp, border:`1px solid ${C.hls}`, borderRadius:12, padding:'13px 12px', display:'flex', flexDirection:'column', gap:6, minHeight:88, cursor:'pointer', textAlign:'left' }}>
             <div style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', color:C.ch }}>
               {CAT_ICONS[cat]}
             </div>
             <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:14, fontWeight:500, color:C.ch, lineHeight:1.2 }}>{cat}</div>
-            <div style={{ fontSize:11, color:C.sl }}>{counts[cat] || 0} мэргэжил</div>
+            <div style={{ fontSize:11, color:C.sl }}>{CAT_COUNTS[cat]} мэргэжил</div>
           </button>
         ))}
       </div>
@@ -51,28 +112,50 @@ function AllCats({ onSelect, onBack, counts }) {
   );
 }
 
+/* ── Main Dashboard ── */
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
-  const [showAll, setShowAll] = useState(false);
-  const [counts, setCounts] = useState({});
+  // screen: 'home' | 'allcats' | { mainCat } | { mainCat, sub }
+  const [screen, setScreen] = useState('home');
   const name = profile?.ner || user?.email?.split('@')[0] || 'Та';
+  const cats = MAIN_CATS.slice(0, 6);
 
-  // Count profession listings per category
-  useEffect(()=>{
-    const profCounts = {};
-    Object.entries(CHIGLEL_MAP).forEach(([cat, subs])=>{
-      profCounts[cat] = Object.values(subs).flat().length;
+  /* Navigate to ajiltan with filter */
+  const goFilter = (mainCat, sub = null) => {
+    navigate('/ajiltan', {
+      state: {
+        filterMain: mainCat,
+        filterSub: sub || '',
+      },
     });
-    setCounts(profCounts);
-  }, []);
+  };
 
-  const cats = MAIN_CATS.slice(0,6);
-
-  if (showAll) {
-    return <AllCats counts={counts} onSelect={(cat)=>navigate('/ajiltan', {state:{filterMain:cat}})} onBack={()=>setShowAll(false)}/>;
+  /* Screen: Sub-category drill-down */
+  if (screen?.mainCat) {
+    return (
+      <SubCatScreen
+        mainCat={screen.mainCat}
+        onBack={()=>setScreen('allcats')}
+        onSelectSub={(sub)=>{
+          if (sub) goFilter(screen.mainCat, sub);
+          else     goFilter(screen.mainCat);
+        }}
+      />
+    );
   }
 
+  /* Screen: All categories */
+  if (screen === 'allcats') {
+    return (
+      <AllCatsScreen
+        onBack={()=>setScreen('home')}
+        onSelectMain={(cat)=>setScreen({ mainCat: cat })}
+      />
+    );
+  }
+
+  /* Screen: Home */
   return (
     <div style={{ padding:16, background:C.pg, minHeight:'100%' }}>
       {/* Greeting */}
@@ -87,26 +170,43 @@ export default function Dashboard() {
       <div style={{ background:C.pp, border:`1px solid ${C.hl}`, borderRadius:10, padding:'12px 14px', display:'flex', alignItems:'center', gap:10, marginBottom:18, cursor:'pointer' }}
         onClick={()=>navigate('/ajil')} className="animate-fade-up-delay">
         <svg style={{width:18,height:18,color:C.sl,flexShrink:0}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <span style={{color:'#9CA3AF',fontSize:14}}>Мэргэжил, байршил...</span>
+        <span style={{color:C.sll,fontSize:14}}>Мэргэжил, байршил...</span>
       </div>
 
-      {/* Category grid */}
+      {/* Quick links */}
+      <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:20, paddingBottom:2 }} className="animate-fade-up-delay">
+        {[
+          {to:'/ajil',    label:'Ажил хайх', icon:'🔍'},
+          {to:'/ajiltan', label:'Ажилтан',   icon:'👷'},
+          {to:'/premium', label:'Premium',   icon:'💎'},
+          {to:'/sanhuu',  label:'Санхүү',    icon:'💳'},
+        ].map(l=>(
+          <button key={l.to} onClick={()=>navigate(l.to)}
+            style={{ flexShrink:0, background:C.pp, border:`1px solid ${C.hls}`, borderRadius:12, padding:'10px 14px', textAlign:'center', cursor:'pointer', minWidth:70 }}>
+            <div style={{ fontSize:20, marginBottom:4 }}>{l.icon}</div>
+            <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:12, fontWeight:500, color:C.ch, whiteSpace:'nowrap' }}>{l.label}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Category grid — clicking opens sub-category drill-down */}
       <div className="animate-fade-up-delay">
         <div style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', color:C.gdd, fontWeight:500, marginBottom:10 }}>АНГИЛАЛ</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-          {cats.map(cat=>(
-            <button key={cat} onClick={()=>navigate('/ajiltan',{state:{filterMain:cat}})}
+          {cats.map(cat => (
+            <button key={cat}
+              onClick={()=>setScreen({ mainCat: cat })}
               style={{ background:C.pp, border:`1px solid ${C.hls}`, borderRadius:12, padding:'13px 12px', display:'flex', flexDirection:'column', gap:6, minHeight:88, cursor:'pointer', textAlign:'left' }}>
               <div style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', color:C.ch }}>
                 {CAT_ICONS[cat]}
               </div>
               <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:14, fontWeight:500, color:C.ch, lineHeight:1.2 }}>{cat}</div>
-              <div style={{ fontSize:11, color:C.sl }}>{counts[cat] || 0} мэргэжил</div>
+              <div style={{ fontSize:11, color:C.sl }}>{CAT_COUNTS[cat]} мэргэжил</div>
             </button>
           ))}
         </div>
         <div style={{ textAlign:'center', margin:'12px 0 8px' }}>
-          <button onClick={()=>setShowAll(true)} style={{ background:'none', border:'none', color:C.ch, fontSize:12, fontWeight:500, cursor:'pointer' }}>
+          <button onClick={()=>setScreen('allcats')} style={{ background:'none', border:'none', color:C.ch, fontSize:12, fontWeight:500, cursor:'pointer' }}>
             Бүх ангилал харах →
           </button>
         </div>
