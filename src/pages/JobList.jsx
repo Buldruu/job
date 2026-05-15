@@ -154,6 +154,9 @@ const HAGA = {
 export default function JobList({ type }) {
   const cfg = configs[type];
   const { user, profile, refreshProfile } = useAuth();
+  const navigate                    = useNavigate();
+  const location                    = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
