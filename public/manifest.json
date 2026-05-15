@@ -1,0 +1,15 @@
+{
+  "name": "HaGa — Ажлын платформ",
+  "short_name": "HaGa",
+  "description": "Монголын мэргэжилтнүүдэд зориулсан итгэлцлийн платформ",
+  "start_url": "/job/",
+  "display": "standalone",
+  "background_color": "#1A2B4A",
+  "theme_color": "#1A2B4A",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/job/favicon-32.png",  "sizes": "32x32",   "type": "image/png" },
+    { "src": "/job/icon-192.png",    "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/job/icon-512.png",    "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
