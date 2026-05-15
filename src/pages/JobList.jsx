@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createNotification } from '../components/Notifications';
+import AddressPicker from '../components/AddressPicker';
 import { startChat } from './Chat';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -881,7 +882,13 @@ export default function JobList({ type }) {
                   {f.label}{f.required&&<span className="text-red-400 ml-1">*</span>}
                 </label>
                 {f.isAddress ? (
-                  <AddressInput value={form[f.key]||''} onChange={v=>setForm(p=>({...p,[f.key]:v}))}/>
+                  <AddressPicker
+                    value={form[f.key]||''}
+                    placeholder="Хаяг хайх... (Улаанбаатар, дүүрэг, хороо)"
+                    onChange={({address,lat,lng})=>{
+                      setForm(p=>({...p,[f.key]:address, lat:lat||p.lat, lng:lng||p.lng}));
+                    }}
+                  />
                 ) : f.textarea ? (
                   <textarea value={form[f.key]||''} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                     required={f.required} rows={3} className="input-base resize-none"/>
