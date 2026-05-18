@@ -288,43 +288,52 @@ export default function JobList({ type }) {
     }
     setSaving(true);
     try {
-      // 0. Upload photo/video if provided
-      let photo_url = form.photo_url || '';
-      let video_intro = form.video_intro || '';
-      if (photoFile) {
-        setPhotoUploading(true);
-        const photoRef = ref(storage, `workers/${user.uid}/photo_${Date.now()}`);
-        await uploadBytes(photoRef, photoFile);
-        photo_url = await getDownloadURL(photoRef);
-        setPhotoUploading(false);
-      }
-      if (videoFile) {
-        setVideoUploading(true);
-        const videoRef = ref(storage, `workers/${user.uid}/video_${Date.now()}`);
-        await uploadBytes(videoRef, videoFile);
-        video_intro = await getDownloadURL(videoRef);
-        setVideoUploading(false);
-      }
-      // 1. Firestore-d shuud hagalna
+      // 1. Firestore-д ЭХЛЭЭД хадгална (upload хүлээхгүй)
       const docRef = await addDoc(collection(db, cfg.collection), {
         ...form,
-        ...(photo_url  ? { photo_url  } : {}),
-        ...(video_intro ? { video_intro } : {}),
+        photo_url:   '',
+        video_intro: '',
         ratings: [],
         uid: user.uid,
         email: user.email,
         createdAt: serverTimestamp(),
       });
-      // 2. Modal haaj, form tsevrlelne - heregleged huleekhgui
-      setForm({}); setCvFile(null); setShowForm(false); setSaving(false);
-      // 3. CV bail ard ni upload hiine (background)
-      if (cvFile) {
-        const { updateDoc } = await import('firebase/firestore');
-        const storageRef = ref(storage, `cvs/${user.uid}/${Date.now()}_${cvFile.name}`);
-        await uploadBytes(storageRef, cvFile);
-        const cv_url = await getDownloadURL(storageRef);
-        await updateDoc(docRef, { cv_url, cv_name: cvFile.name });
-      }
+
+      // 2. Modal хаах — хэрэглэгч хүлээхгүй
+      const savedPhotoFile = photoFile;
+      const savedVideoFile = videoFile;
+      const savedCvFile    = cvFile;
+      setForm({}); setPhotoFile(null); setVideoFile(null); setCvFile(null);
+      setShowForm(false); setSaving(false); setAddStep(0);
+
+      // 3. Upload-уудыг арын дэвсгэрт хийнэ (non-blocking)
+      ;(async () => {
+        const updates = {};
+        try {
+          if (savedPhotoFile) {
+            const r = ref(storage, `workers/${user.uid}/photo_${Date.now()}`);
+            await uploadBytes(r, savedPhotoFile);
+            updates.photo_url = await getDownloadURL(r);
+          }
+          if (savedVideoFile) {
+            const r = ref(storage, `workers/${user.uid}/video_${Date.now()}`);
+            await uploadBytes(r, savedVideoFile);
+            updates.video_intro = await getDownloadURL(r);
+          }
+          if (savedCvFile) {
+            const r = ref(storage, `cvs/${user.uid}/${Date.now()}_${savedCvFile.name}`);
+            await uploadBytes(r, savedCvFile);
+            updates.cv_url  = await getDownloadURL(r);
+            updates.cv_name = savedCvFile.name;
+          }
+          if (Object.keys(updates).length > 0) {
+            const { updateDoc: ud } = await import('firebase/firestore');
+            await ud(docRef, updates);
+          }
+        } catch(uploadErr) {
+          console.warn('Background upload error:', uploadErr);
+        }
+      })();
     } catch(err) {
       console.error(err);
       setSaving(false);
