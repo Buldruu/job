@@ -653,8 +653,11 @@ export default function JobList({ type }) {
             ))}
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up-delay">
-          {filtered.map((item, idx) => {
+        {/* Separated sections: Байгуулга / Хувь хүн */}
+        {(() => {
+          const orgs    = filtered.filter(i => i.zarlagch_turul === 'Байгуулга');
+          const persons = filtered.filter(i => i.zarlagch_turul !== 'Байгуулга');
+          const renderCard = (item, idx) => {
             const c = COLORS[idx % COLORS.length];
             const avg = avgRating(item.ratings);
             const cnt = (item.ratings||[]).length;
@@ -675,32 +678,44 @@ export default function JobList({ type }) {
                 </div>
                 <div className={`font-display font-bold text-base mb-1 ${c.text}`}>{cfg.cardTitle(item)}</div>
                 {cfg.cardSub(item) && <div className="text-gray-500 text-sm">{cfg.cardSub(item)}</div>}
-                <div className="mt-2">
-                  <StarDisplay rating={avg} count={cnt}/>
-                </div>
-                {item.chiglel && (
-                  <span className="inline-block mt-2 text-xs font-medium text-gray-500 bg-white border border-surf-200 px-2.5 py-1 rounded-full">
-                    {item.chiglel}
-                  </span>
-                )}
-                {item.hayg && <div className="text-gray-400 text-xs mt-2 flex items-center gap-1">
-                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                  </svg>
-                  <span className="truncate">{item.hayg}</span>
-                </div>}
+                <div className="mt-2"><StarDisplay rating={avg} count={cnt}/></div>
+                {item.chiglel && <span className="inline-block mt-2 text-xs font-medium text-gray-500 bg-white border border-surf-200 px-2.5 py-1 rounded-full">{item.chiglel}</span>}
+                {item.hayg && <div className="text-gray-400 text-xs mt-2 flex items-center gap-1"><svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg><span className="truncate">{item.hayg}</span></div>}
                 <div className="flex gap-1.5 mt-1.5 flex-wrap">
                   {item.featured && <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">⭐ Онцлох</span>}
                   {item._isPremiumPoster && <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full font-medium">💎 Premium</span>}
                   {item.uid===user?.uid && <span className="text-xs text-brand-500 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full font-medium">● Миний зар</span>}
-                  {item.zarlagch_turul && <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${item.zarlagch_turul==='Байгуулга' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>{item.zarlagch_turul==='Байгуулга' ? '🏢' : '👤'} {item.zarlagch_turul}</span>}
                 </div>
                 <div className="text-gray-300 text-xs mt-2">{item.createdAt?.toDate?.()?.toLocaleDateString('mn-MN')||''}</div>
               </button>
             );
-          })}
-        </div>
-        </>
+          };
+          return (
+            <>
+              {orgs.length > 0 && (
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0 10px', borderBottom:`2px solid var(--hairline)`, marginBottom:12 }}>
+                    <span style={{ fontSize:18 }}>🏢</span>
+                    <span style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--seal-gold-dark)', fontWeight:700 }}>Байгуулга</span>
+                    <span style={{ fontSize:11, color:'var(--steel)', background:'var(--charter-blue-50)', padding:'1px 8px', borderRadius:99 }}>{orgs.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{orgs.map((item,i)=>renderCard(item,i))}</div>
+                </div>
+              )}
+              {persons.length > 0 && (
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0 10px', borderBottom:`2px solid var(--hairline)`, marginBottom:12 }}>
+                    <span style={{ fontSize:18 }}>👤</span>
+                    <span style={{ fontSize:11, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--seal-gold-dark)', fontWeight:700 }}>Хувь хүн</span>
+                    <span style={{ fontSize:11, color:'var(--steel)', background:'var(--charter-blue-50)', padding:'1px 8px', borderRadius:99 }}>{persons.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{persons.map((item,i)=>renderCard(item,i))}</div>
+                </div>
+              )}
+            </>
+          );
+        })()}
+                </>
       )}
 
       {/* Detail modal */}
@@ -818,13 +833,53 @@ export default function JobList({ type }) {
           {selectedOwner && (
             <PosterCard owner={selectedOwner} isPremium={selected._isPremiumPoster} postUtas={selected.utas} isOwnPost={selected.uid === user?.uid} postId={selected.id} db={db} user={user}/>
           )}
+          {/* Нэмэлт мэдээлэл */}
+          {selectedOwner && (selectedOwner.nemelt || selectedOwner.turshlaga || selectedOwner.surgaltin_gazar || selectedOwner.chadvar || (selectedOwner.portfolio||[]).length>0) && (
+            <div style={{ marginTop:12, background:'var(--parchment)', border:'1px solid var(--hairline-soft)', borderRadius:12, padding:14 }}>
+              <div style={{ fontSize:11, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--seal-gold-dark)', fontWeight:600, marginBottom:10 }}>НЭМЭЛТ МЭДЭЭЛЭЛ</div>
+              {selectedOwner.turshlaga && (
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:'var(--steel)', minWidth:80 }}>Туршлага:</span>
+                  <span style={{ fontSize:12, color:'var(--ink)', fontWeight:500 }}>{selectedOwner.turshlaga} жил</span>
+                </div>
+              )}
+              {selectedOwner.surgaltin_gazar && (
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:'var(--steel)', minWidth:80 }}>Сургалт:</span>
+                  <span style={{ fontSize:12, color:'var(--ink)' }}>{selectedOwner.surgaltin_gazar}</span>
+                </div>
+              )}
+              {selectedOwner.chadvar && (
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:'var(--steel)', minWidth:80 }}>Чадвар:</span>
+                  <span style={{ fontSize:12, color:'var(--ink)' }}>{selectedOwner.chadvar}</span>
+                </div>
+              )}
+              {selectedOwner.nemelt && (
+                <div style={{ fontSize:12, color:'var(--ink)', lineHeight:1.5, marginBottom:8 }}>{selectedOwner.nemelt}</div>
+              )}
+              {(selectedOwner.portfolio||[]).length > 0 && (
+                <div>
+                  <div style={{ fontSize:11, color:'var(--steel)', marginBottom:6 }}>Хийсэн ажлын зургууд:</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6 }}>
+                    {selectedOwner.portfolio.slice(0,6).map((url,i) => (
+                      <div key={i} style={{ aspectRatio:'1', borderRadius:8, overflow:'hidden', border:'1px solid var(--hairline)' }}>
+                        <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Chat button for хувь хүн posts */}
           {selected.uid && selected.uid !== user?.uid && (
             <div style={{ marginTop:12 }}>
               <button
                 onClick={async () => {
                   const chatId = await startChat(user.uid, selected.uid, selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected));
-                  navigate('/chat');
+                  navigate('/chat', { state: { openChatId: chatId, otherUid: selected.uid } });
                   setSelected(null);
                 }}
                 style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'12px', background:'var(--charter-blue)', color:'var(--parchment)', border:'none', borderRadius:8, fontSize:14, fontWeight:500, cursor:'pointer' }}>
