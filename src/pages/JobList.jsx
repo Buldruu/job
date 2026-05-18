@@ -281,9 +281,7 @@ export default function JobList({ type }) {
     const myPosts = items.filter(i => i.uid === user?.uid);
     const limit = isPremium ? 999 : FREE_LIMIT;
     if (myPosts.length >= limit) {
-      alert(plan === 'free'
-        ? `Үнэгүй багцад ${PREMIUM_LIMITS.free.posts} зар нэмэх боломжтой.\nИлүү зар нэмэхийн тулд Premium авна уу.`
-        : `${plan} багцад ${limit} зар нэмэх боломжтой.`);
+      alert('Та хамгийн ихдээ 10 зар тавих боломжтой.\nПремиум авснаар хязгааргүй зар тавих боломжтой болно.');
       return;
     }
     setSaving(true);
@@ -473,7 +471,13 @@ export default function JobList({ type }) {
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
           <h1 className="text-2xl font-display font-bold text-gray-800">{cfg.title}</h1>
         </div>
-        <button onClick={() => setShowForm(true)}
+        <button onClick={() => {
+          // Pre-set zarlagch_turul for ajiltan type so Хувь хүн fields show immediately
+          if (type === 'ajiltan' || type === 'ajil') {
+            setForm({ zarlagch_turul: 'Хувь хүн' });
+          }
+          setShowForm(true);
+        }}
           className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-btn transition-all">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -923,7 +927,7 @@ export default function JobList({ type }) {
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                 {MAIN_CATS.map(cat => (
                   <button key={cat} type="button"
-                    onClick={()=>{ setForm(p=>({...p, chiglel_main:cat, chiglel:''})); setAddStep(1); }}
+                    onClick={()=>{ setForm(p=>({...p, chiglel_main:cat, chiglel:'', zarlagch_turul:p.zarlagch_turul||'Хувь хүн'})); setAddStep(1); }}
                     style={{
                       background: form.chiglel_main===cat ? 'var(--charter-blue-50)' : 'var(--paper)',
                       border: form.chiglel_main===cat ? '2px solid var(--charter-blue)' : '1px solid var(--hairline-soft)',
@@ -1025,7 +1029,7 @@ export default function JobList({ type }) {
                         onClick={() => {
                           // Reset form when switching type (keep only zarlagch_turul)
                           if (f.key === 'zarlagch_turul' && form[f.key] !== opt) {
-                            setForm({ zarlagch_turul: opt });
+                            setForm(prev => ({ chiglel_main:prev.chiglel_main, zarlagch_turul: opt }));
                           } else {
                             setForm(p => ({...p, [f.key]: opt}));
                           }
