@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const AuthContext = createContext(null);
@@ -11,18 +11,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    let profileUnsub = null;
+    const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      if (profileUnsub) { profileUnsub(); profileUnsub = null; }
       if (u) {
-        const snap = await getDoc(doc(db, 'users', u.uid));
-        if (snap.exists()) setProfile(snap.data());
-        else setProfile(null);
+        // Real-time listener — profile updates instantly
+        profileUnsub = onSnapshot(doc(db, 'users', u.uid), (snap) => {
+          if (snap.exists()) setProfile({ ...snap.data(), uid: u.uid });
+          else setProfile({});
+          setLoading(false);
+        }, () => setLoading(false));
       } else {
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return unsub;
+    return () => { unsub(); if (profileUnsub) profileUnsub(); };
   }, []);
 
   const refreshProfile = async () => {

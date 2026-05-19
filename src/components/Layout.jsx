@@ -11,8 +11,8 @@ import { NotificationBell, NotificationsPanel } from './Notifications';
 /* ── 5 bottom tabs — HAGA spec ── */
 const TABS = [
   { to:'/',        end:true,  label:'Нүүр',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-  { to:'/ajil',   end:false, label:'Хайх',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> },
-  { to:'/ajiltan',end:false, label:'Ажил',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
+  { to:'/ajil',   end:false, label:'Ажлын зар', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> },
+  { to:'/ajiltan',end:false, label:'Ажилтан', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
   { to:'/chat',   end:false, label:'Чат',     icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
   { to:'/profile',end:false, label:'Профайл', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
 ];
@@ -35,7 +35,7 @@ export default function Layout() {
 
       {/* ── HAGA App bar ── */}
       <header style={{ flexShrink:0, padding:'12px 16px', background:'var(--paper)', borderBottom:'1px solid var(--hairline-soft)', display:'flex', alignItems:'center', gap:10, minHeight:52, zIndex:10 }}>
-        <button onClick={()=>setBrand(true)} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+        <button onClick={()=>navigate('/')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0 }}>
           <HaGaLogo width={24} variant="grad"/>
           <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:'var(--charter-blue)', lineHeight:1 }}>HAGA</div>
         </button>
@@ -84,7 +84,7 @@ export default function Layout() {
 
             {/* Drawer header */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid var(--hairline-soft)' }}>
-              <button onClick={()=>{setBrand(true);setDrawer(false);}} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+              <button onClick={()=>{setBrand(true);setDrawer(false);}} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, width:'100%' }}>
                 <HaGaLogo width={22} variant="grad"/>
                 <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:16, fontWeight:500, color:'var(--charter-blue)' }}>HAGA</div>
               </button>

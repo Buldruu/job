@@ -158,9 +158,14 @@ export default function Dashboard() {
     <div style={{ padding:16, background:C.pg, minHeight:'100%' }}>
       {/* Greeting */}
       <div style={{ marginBottom:14 }} className="animate-fade-up">
-        <div style={{ fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:C.gdd, fontWeight:500, marginBottom:4 }}>САЙН БАЙНА УУ</div>
+        <div style={{ fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:C.gdd, fontWeight:500, marginBottom:4 }}>
+          САЙН БАЙНА УУ{profile?.ner ? `, ${profile.ner}` : ''}
+        </div>
         <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:22, fontWeight:500, color:C.ch, letterSpacing:'-0.01em', lineHeight:1.15 }}>
-          Ямар ажил<br/>хайж байна вэ?
+          Өнөөдөр ямар<br/>мэргэжилтэн хайж байна вэ?
+        </div>
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontStyle:'italic', fontSize:13, color:C.sl, marginTop:6 }}>
+          Итгэлтэй захиалагч. Мэргэшсэн ажилтан. Нэгэн дор.
         </div>
       </div>
 

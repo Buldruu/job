@@ -28,13 +28,13 @@ const COLORS = [
 
 const configs = {
   ajil: {
-    title:'Ажил хайх', addLabel:'Зар нэмэх', addTitle:'Өөрийн мэдээлэл оруулах',
+    title:'Ажлын зар', addLabel:'Зар нэмэх', addTitle:'Ажлын зар оруулах',
     collection:'jobs', cvUpload:true,
     fields:[
       {key:'ovog',      label:'Овог',              required:true},
       {key:'ner',       label:'Нэр',               required:true},
       {key:'chadvar',   label:'Чадвар',            required:false},
-      {key:'turshlaga', label:'Туршлага',          required:false},
+      {key:'turshlaga', label:'Туршлагын жил',          required:false},
       {key:'tsalin',    label:'Хүссэн цалин (₮)',  required:false},
       {key:'chiglel',   label:'Чиглэл',            required:false},
       {key:'hayg',      label:'Хаяг',              required:false, isAddress:true},
@@ -46,7 +46,7 @@ const configs = {
     cardSub:(d)=>d.chiglel, salaryKey:'tsalin',
   },
   ajiltan: {
-    title:'Ажилтан хайх', addLabel:'Зар нэмэх', addTitle:'Ажлын зар оруулах',
+    title:'Ажилтан хайх', addLabel:'Профайл нэмэх', addTitle:'Ажил хайгч профайл оруулах',
     collection:'workers',
     // Байгуулга fields
     fieldsOrg:[
@@ -68,7 +68,7 @@ const configs = {
       {key:'photo_url',         label:'Зураг',              required:false, isPhotoUpload:true},
       {key:'video_intro',       label:'Танилцуулга бичлэг (max 1 мин)', required:false, isVideoUpload:true},
       {key:'hiilgeh_ajil',      label:'Хийлгэх ажил',      required:true},
-      {key:'turshlaga',         label:'Туршлага',           required:false},
+      {key:'turshlaga',         label:'Туршлагын жил',           required:false},
       {key:'une_huls',          label:'Үнэ / Хөлс (₮)',    required:false},
       {key:'chiglel',           label:'Чиглэл',             required:false},
       {key:'hayg',              label:'Хаяг',               required:false, isAddress:true},
@@ -90,7 +90,7 @@ const configs = {
       {key:'baiguulgiin_ner',   label:'Байгууллагын нэр', required:true},
       {key:'alban_tushaal',     label:'Дадлагын чиглэл',  required:true},
       {key:'chadvar',           label:'Чадвар',           required:false},
-      {key:'turshlaga',         label:'Туршлага',         required:false},
+      {key:'turshlaga',         label:'Туршлагын жил',         required:false},
       {key:'tsalin',            label:'Цалин (₮)',        required:false},
       {key:'chiglel',           label:'Чиглэл',           required:false},
       {key:'hayg',              label:'Хаяг',             required:false, isAddress:true},
@@ -449,7 +449,12 @@ export default function JobList({ type }) {
         const salNum = parseFloat(String(i[cfg.salaryKey]||'').replace(/[^0-9.]/g,''));
         if (!salNum || salNum < parseFloat(filterSalaryMin)) return false;
       }
-      if (filterZarlagch && i.zarlagch_turul !== filterZarlagch) return false;
+      if (filterZarlagch) {
+        // 'Байгуулга' filter: strict match
+        // 'Хувь хүн' filter: match Хувь хүн OR empty/undefined
+        if (filterZarlagch === 'Байгуулга' && i.zarlagch_turul !== 'Байгуулга') return false;
+        if (filterZarlagch === 'Хувь хүн' && i.zarlagch_turul === 'Байгуулга') return false;
+      }
       return true;
     })
     // Sort: premium poster's posts → featured → newest
@@ -921,9 +926,19 @@ export default function JobList({ type }) {
           {addStep === 0 && (
             <div style={{ padding:16, overflowY:'auto', flex:1 }}>
               <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:20, fontWeight:500, color:'var(--charter-blue)', marginBottom:6 }}>
-                {type==='ajiltan' ? 'Ямар ажилтан хайж байна вэ?' : 'Ямар ажил хийлгэх вэ?'}
+                {type==='ajiltan' ? 'Та ямар ажилтан хайж байна вэ?' : 'Та ямар ажлын зар оруулж байна вэ?'}
               </div>
-              <div style={{ fontSize:12, color:'var(--steel)', marginBottom:14 }}>Ангилалаа сонгоно уу</div>
+              <div style={{ fontSize:12, color:'var(--steel)', marginBottom:6 }}>
+                {type==='ajiltan'
+                  ? '👷 Ажил хайгч өөрийн профайл, туршлагаа оруулна'
+                  : '🏢 Байгуулга эсвэл хувь хүн ажлын санал оруулна'}
+              </div>
+              <div style={{ background:'var(--charter-blue-50)', borderRadius:8, padding:'8px 12px', fontSize:12, color:'var(--charter-blue)', marginBottom:14 }}>
+                {type==='ajiltan'
+                  ? '👷 Та өөрийн ажил хайгч профайл оруулах гэж байна — туршлага, мэдлэг, хүссэн цалингаа бичнэ'
+                  : '📋 Та ажилтан хайж зар нэмэх гэж байна — байгуулга эсвэл хувь хүний санал'}
+              </div>
+              <div style={{ fontSize:12, color:'var(--steel)', marginBottom:14 }}>Чиглэлээ сонгоно уу:</div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                 {MAIN_CATS.map(cat => (
                   <button key={cat} type="button"
