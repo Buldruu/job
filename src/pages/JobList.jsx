@@ -28,14 +28,14 @@ const COLORS = [
 
 const configs = {
   ajil: {
-    title:'Ажлын зар', addLabel:'Зар нэмэх', addTitle:'Ажлын зар оруулах',
+    title:'Ажлын зар', addLabel:'Профайл нэмэх', addTitle:'Ажил хайгчийн мэдээлэл оруулах',
     collection:'jobs', cvUpload:true,
     fields:[
       {key:'ovog',      label:'Овог',              required:true},
       {key:'ner',       label:'Нэр',               required:true},
       {key:'chadvar',   label:'Чадвар',            required:false},
       {key:'turshlaga', label:'Туршлагын жил',          required:false},
-      {key:'tsalin',    label:'Хүссэн цалин (₮)',  required:false},
+      {key:'tsalin',    label:'Үйлчилгээний төлбөр (₮)',  required:false},
       {key:'chiglel',   label:'Чиглэл',            required:false},
       {key:'hayg',      label:'Хаяг',              required:false, isAddress:true},
       {key:'cv_text',   label:'CV / Намтар',       required:false, textarea:true},
@@ -46,7 +46,7 @@ const configs = {
     cardSub:(d)=>d.chiglel, salaryKey:'tsalin',
   },
   ajiltan: {
-    title:'Ажилтан хайх', addLabel:'Профайл нэмэх', addTitle:'Ажил хайгч профайл оруулах',
+    title:'Ажилтан хайх', addLabel:'Зар нэмэх', addTitle:'Ажилтан хайх зар оруулах',
     collection:'workers',
     // Байгуулга fields
     fieldsOrg:[
@@ -55,7 +55,7 @@ const configs = {
       {key:'alban_tushaal',     label:'Албан тушаал',       required:true},
       {key:'chadvar',           label:'Чадвар / Мэдлэг',    required:false},
       {key:'turshlaga',         label:'Туршлага шаардлага', required:false},
-      {key:'tsalin',            label:'Цалин (₮/сар)',      required:false},
+      {key:'tsalin',            label:'Үйлчилгээний төлбөр (₮/сар)',      required:false},
       {key:'chiglel',           label:'Чиглэл',             required:false},
       {key:'hayg',              label:'Хаяг',               required:false, isAddress:true},
       {key:'ajilchinaas_huseh', label:'Ажилтнаас хүсэх',   required:false, textarea:true},
@@ -91,7 +91,7 @@ const configs = {
       {key:'alban_tushaal',     label:'Дадлагын чиглэл',  required:true},
       {key:'chadvar',           label:'Чадвар',           required:false},
       {key:'turshlaga',         label:'Туршлагын жил',         required:false},
-      {key:'tsalin',            label:'Цалин (₮)',        required:false},
+      {key:'tsalin',            label:'Үйлчилгээний төлбөр (₮)',        required:false},
       {key:'chiglel',           label:'Чиглэл',           required:false},
       {key:'hayg',              label:'Хаяг',             required:false, isAddress:true},
       {key:'ajilchinaas_huseh', label:'Шаардлага',        required:false, textarea:true},
@@ -100,21 +100,6 @@ const configs = {
     ],
     cardTitle:(d)=>d.alban_tushaal||'Дадлага',
     cardSub:(d)=>d.baiguulgiin_ner, salaryKey:'tsalin',
-  },
-  surgalt: {
-    title:'Сургалт', addLabel:'Зар нэмэх', addTitle:'Сургалтын зар оруулах',
-    collection:'courses',
-    fields:[
-      {key:'baiguulga_ner', label:'Байгууллага',   required:true},
-      {key:'ner',           label:'Сургалтын нэр', required:true},
-      {key:'une_hansh',     label:'Үнэ ханш (₮)',  required:false},
-      {key:'hugatsaa',      label:'Хугацаа',       required:false},
-      {key:'hayg',          label:'Хаяг / Линк',   required:false, isAddress:true},
-      {key:'utas',          label:'Холбоо барих утас', required:false},
-      {key:'nemelt',        label:'Дэлгэрэнгүй',   required:false, textarea:true},
-    ],
-    cardTitle:(d)=>d.ner||'Сургалт',
-    cardSub:(d)=>d.baiguulga_ner, salaryKey:'une_hansh',
   },
 };
 
@@ -289,11 +274,12 @@ export default function JobList({ type }) {
       // 1. Firestore-д ЭХЛЭЭД хадгална (upload хүлээхгүй)
       const docRef = await addDoc(collection(db, cfg.collection), {
         ...form,
-        photo_url:   '',
-        video_intro: '',
+        photo_url:   form.photo_url || '',
+        video_intro: form.video_intro || '',
+        portfolio:   form.portfolio || [],
         ratings: [],
         uid: user.uid,
-        email: user.email,
+        email: user.email || '',
         createdAt: serverTimestamp(),
       });
 
@@ -303,6 +289,14 @@ export default function JobList({ type }) {
       const savedCvFile    = cvFile;
       setForm({}); setPhotoFile(null); setVideoFile(null); setCvFile(null);
       setShowForm(false); setSaving(false); setAddStep(0);
+      // Notify user
+      try {
+        await createNotification(user.uid, {
+          type:'system',
+          title:'Амжилттай хадгалагдлаа ✅',
+          body:`Таны зар амжилттай нийтлэгдэж бусдад харагдаж эхэллээ.`,
+        });
+      } catch(e) {}
 
       // 3. Upload-уудыг арын дэвсгэрт хийнэ (non-blocking)
       ;(async () => {
@@ -523,7 +517,7 @@ export default function JobList({ type }) {
           <select value={filterMain}
             onChange={e => { setFilterMain(e.target.value); setFilterSub(''); setFilterProf(''); }}
             style={{ background:'var(--paper)', border:'1px solid var(--hairline)', borderRadius:8, padding:'8px 10px', fontSize:12, color:'var(--ink)', flex:1 }}>
-            <option value="">🗂 Бүх ангилал</option>
+            <option value="">🗂 Ангилал</option>
             {MAIN_CATS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           {filterMain && (
@@ -935,8 +929,8 @@ export default function JobList({ type }) {
               </div>
               <div style={{ background:'var(--charter-blue-50)', borderRadius:8, padding:'8px 12px', fontSize:12, color:'var(--charter-blue)', marginBottom:14 }}>
                 {type==='ajiltan'
-                  ? '👷 Та өөрийн ажил хайгч профайл оруулах гэж байна — туршлага, мэдлэг, хүссэн цалингаа бичнэ'
-                  : '📋 Та ажилтан хайж зар нэмэх гэж байна — байгуулга эсвэл хувь хүний санал'}
+                  ? '📋 Та ажилтан хайж зар нэмэх гэж байна — байгуулга эсвэл хувь хүний санал'
+                  : '👷 Та өөрийн ажил хайгч профайл оруулах гэж байна — туршлага, мэдлэг, үйлчилгээний төлбөрөө бичнэ'}
               </div>
               <div style={{ fontSize:12, color:'var(--steel)', marginBottom:14 }}>Чиглэлээ сонгоно уу:</div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
@@ -1067,39 +1061,55 @@ export default function JobList({ type }) {
               </div>
             ))}
 
-            {/* CV upload — auto-extracts text */}
+            {/* Portfolio photos upload — replaces CV */}
             {cfg.cvUpload && (
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  CV файл (.docx — текст автоматаар орно)
+                  📸 Хийсэн ажлын зургууд (олон сонгож болно)
                 </label>
-                <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition-all ${
-                  cvFile ? 'border-brand-300 bg-brand-50' : 'border-surf-200 hover:border-brand-300 bg-surf-50'
-                }`}>
-                  {cvParsing ? (
-                    <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin flex-shrink-0"/>
-                  ) : (
-                    <svg className="w-5 h-5 text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                  )}
-                  <span className="text-sm text-gray-500 truncate">
-                    {cvParsing ? 'Уншиж байна...' : cvFile ? cvFile.name : 'Файл сонгох...'}
-                  </span>
-                  <input type="file" accept=".docx,.doc" className="hidden" onChange={handleCvFile}/>
-                </label>
-                {cvFile && form.cv_text && (
-                  <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Текст автоматаар CV талбарт орлоо
-                  </p>
+                {/* Show selected/uploaded photos */}
+                {(form.portfolio||[]).length > 0 && (
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:8 }}>
+                    {form.portfolio.map((url, i) => (
+                      <div key={i} style={{ position:'relative', aspectRatio:'1', borderRadius:8, overflow:'hidden', border:`1px solid var(--hairline)` }}>
+                        <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                        <button type="button"
+                          onClick={()=>setForm(p=>({...p, portfolio:(p.portfolio||[]).filter((_,j)=>j!==i)}))}
+                          style={{ position:'absolute', top:3, right:3, width:20, height:20, background:'rgba(0,0,0,0.6)', color:'#fff', border:'none', borderRadius:'50%', cursor:'pointer', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
+                <label style={{ display:'flex', alignItems:'center', gap:10, border:`2px dashed var(--hairline)`, borderRadius:10, padding:'12px 14px', cursor:'pointer', background:'var(--parchment)' }}>
+                  <span style={{ fontSize:20 }}>+</span>
+                  <span style={{ fontSize:13, color:'var(--steel)' }}>
+                    {(form.portfolio||[]).length > 0 ? 'Бусад зураг нэмэх' : 'Зураг нэмэх (олон сонгож болно)'}
+                  </span>
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (!files.length || !user) return;
+                      try {
+                        const urls = await Promise.all(files.map(async (file) => {
+                          const r = ref(storage, `portfolio/${user.uid}/${Date.now()}_${file.name}`);
+                          await uploadBytes(r, file);
+                          return getDownloadURL(r);
+                        }));
+                        setForm(p => ({ ...p, portfolio:[...(p.portfolio||[]), ...urls] }));
+                      } catch(err) {
+                        alert('Зураг байршуулахад алдаа гарлаа: '+err.message);
+                      }
+                    }}/>
+                </label>
+                <p style={{ fontSize:11, color:'var(--steel)', marginTop:6 }}>
+                  💡 Танай хийсэн ажлын дээж зургуудаа оруулснаар захиалагч таны чадварыг харж болно
+                </p>
               </div>
             )}
 
-            <button type="submit" disabled={saving||cvParsing}
+            <button type="submit" disabled={saving}
               className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-btn flex items-center justify-center gap-2">
               {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Хадгалах'}
             </button>
@@ -1248,7 +1258,7 @@ function ChiglелSelect({ value, onChange }) {
     <div className="space-y-2">
       {/* Level 1 */}
       <select value={selMain} onChange={e => handleMain(e.target.value)} className="input-base">
-        <option value="">🗂 Том ангилал сонгоно уу</option>
+        <option value="">🗂 Ангилал сонгоно уу</option>
         {MAIN_CATS.map(m => <option key={m} value={m}>{m}</option>)}
       </select>
       {/* Level 2 */}

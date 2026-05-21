@@ -58,7 +58,6 @@ export default function App() {
           <Route path="ajiltan"        element={<JobList type="ajiltan"/>}/>
           <Route path="chat"           element={<Chat/>}/>
           <Route path="premium"         element={<ProSection/>}/>
-          <Route path="surgalt"        element={<JobList type="surgalt"/>}/>
           <Route path="mergejilten"    element={<Mergejilten/>}/>
           <Route path="sanhuu"         element={<Finance/>}/>
           <Route path="sanhuu/shiljuuleg" element={<Transfer/>}/>

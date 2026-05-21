@@ -101,7 +101,6 @@ export default function Layout() {
                 { to:'/ajiltan',  end:false, label:'Ажилтан хайх' },
                 { to:'/premium',  end:false, label:'Premium' },
                 { to:'/sanhuu',   end:false, label:'Санхүү' },
-                { to:'/surgalt',  end:false, label:'Сургалт' },
                 ...(profile?.isAdmin ? [{ to:'/admin', end:false, label:'⚙️ Админ' }] : []),
               ].map(item => {
                 const active = item.end ? location.pathname === item.to : location.pathname.startsWith(item.to);

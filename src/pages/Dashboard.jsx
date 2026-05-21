@@ -44,7 +44,7 @@ function SubCatScreen({ mainCat, onBack, onSelectSub }) {
       </div>
       {/* Breadcrumb */}
       <div style={{ padding:'8px 16px 0', display:'flex', gap:6, fontSize:11, color:C.sl }}>
-        <span style={{ cursor:'pointer', color:C.sl }} onClick={onBack}>Бүх ангилал</span>
+        <span style={{ cursor:'pointer', color:C.sl }} onClick={onBack}>Ангилал</span>
         <span style={{ color:C.sll }}>›</span>
         <strong style={{ color:C.ink }}>{mainCat}</strong>
       </div>
@@ -93,7 +93,7 @@ function AllCatsScreen({ onSelectMain, onBack }) {
         <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', color:C.ch, display:'flex' }}>
           <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch, flex:1 }}>Бүх ангилал</div>
+        <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch, flex:1 }}>Ангилал</div>
         <svg style={{width:22,height:22,color:C.ch}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </div>
       <div style={{ padding:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
@@ -179,7 +179,7 @@ export default function Dashboard() {
       {/* Quick links */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:20, paddingBottom:2 }} className="animate-fade-up-delay">
         {[
-          {to:'/ajil',    label:'Ажил хайх', icon:'🔍'},
+          {to:'/ajil',    label:'Ажлын зар', icon:'📋'},
           {to:'/ajiltan', label:'Ажилтан',   icon:'👷'},
           {to:'/premium', label:'Premium',   icon:'💎'},
           {to:'/sanhuu',  label:'Санхүү',    icon:'💳'},
@@ -210,7 +210,7 @@ export default function Dashboard() {
         </div>
         <div style={{ textAlign:'center', margin:'12px 0 8px' }}>
           <button onClick={()=>setScreen('allcats')} style={{ background:'none', border:'none', color:C.ch, fontSize:12, fontWeight:500, cursor:'pointer' }}>
-            Бүх ангилал харах →
+            Ангилал харах →
           </button>
         </div>
       </div>
