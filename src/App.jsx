@@ -15,6 +15,8 @@ import Admin from './pages/Admin';
 import Mergejilten from './pages/Mergejilten';
 import Premium from './pages/Premium';
 import Chat from './pages/Chat';
+import Workspace from './pages/Workspace';
+import Post from './pages/Post';
 import ProSection from './pages/ProSection';
 
 function Spinner() {

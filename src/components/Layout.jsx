@@ -1,145 +1,189 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { useAuth } from '../context/AuthContext';
-import BrandModal from './BrandModal';
 import HaGaLogo from './HaGaLogo';
-import AIChat from './AIChat';
 import { NotificationBell, NotificationsPanel } from './Notifications';
 
-/* ── 5 bottom tabs — HAGA spec ── */
 const TABS = [
-  { to:'/',        end:true,  label:'Нүүр',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-  { to:'/ajil',   end:false, label:'Ажлын зар', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> },
-  { to:'/ajiltan',end:false, label:'Ажилтан', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
-  { to:'/chat',   end:false, label:'Чат',     icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
-  { to:'/profile',end:false, label:'Профайл', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+  {
+    to:'/', end:true, label:'Home',
+    icon:(active)=>(
+      <svg viewBox="0 0 24 24" fill={active?'currentColor':'none'} stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    )
+  },
+  {
+    to:'/ajil', end:false, label:'Jobs',
+    icon:(active)=>(
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+    )
+  },
+  {
+    to:'/post', end:false, label:'Post', isCenter:true,
+    icon:(active)=>(
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    )
+  },
+  {
+    to:'/workspace', end:false, label:'Workspace',
+    icon:(active)=>(
+      <svg viewBox="0 0 24 24" fill={active?'currentColor':'none'} stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="7" width="18" height="14" rx="2"/>
+        <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+    )
+  },
+  {
+    to:'/profile', end:false, label:'Profile',
+    icon:(active)=>(
+      <svg viewBox="0 0 24 24" fill={active?'currentColor':'none'} stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    )
+  },
 ];
 
 export default function Layout() {
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, user } = useAuth();
-  const [brand, setBrand] = useState(false);
-  const [drawer, setDrawer] = useState(false);
+  const [drawer,    setDrawer]    = useState(false);
   const [showNotif, setShowNotif] = useState(false);
 
-  const name    = profile?.ner || profile?.ovog || user?.email?.split('@')[0] || 'Хэрэглэгч';
-  const photo   = profile?.photoURL;
-  const initial = (name[0] || 'H').toUpperCase();
-  const isActive = (t) => t.end ? location.pathname === t.to : location.pathname.startsWith(t.to);
-
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100dvh', overflow:'hidden', background:'var(--parchment-deep)', maxWidth:480, margin:'0 auto', position:'relative' }}>
+    <div style={{ maxWidth:480, margin:'0 auto', height:'100dvh', display:'flex', flexDirection:'column', background:'var(--bg-secondary)', position:'relative', overflow:'hidden' }}>
 
-      {/* ── HAGA App bar ── */}
-      <header style={{ flexShrink:0, padding:'12px 16px', background:'var(--paper)', borderBottom:'1px solid var(--hairline-soft)', display:'flex', alignItems:'center', gap:10, minHeight:52, zIndex:10 }}>
-        <button onClick={()=>navigate('/')} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-          <HaGaLogo width={24} variant="grad"/>
-          <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:'var(--charter-blue)', lineHeight:1 }}>HAGA</div>
+      {/* ─── Top App Bar ─── */}
+      <header className="haga-appbar">
+        {/* Logo + brand name */}
+        <button onClick={()=>navigate('/')}
+          style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+          <HaGaLogo width={32}/>
+          <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:20, color:'var(--primary)', letterSpacing:'-0.02em' }}>HAGA</span>
         </button>
-        <div style={{ flex:1 }}/>
-        {/* Notification bell */}
-        <button style={{ width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', color:'var(--steel)' }}>
-          <svg style={{ width:22, height:22 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-          </svg>
-        </button>
-        {/* Drawer menu */}
-        <button onClick={()=>setDrawer(true)} style={{ width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', color:'var(--steel)' }}>
-          <svg style={{ width:22, height:22 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18M3 12h18M3 18h18"/>
-          </svg>
-        </button>
+
+        {/* Right actions */}
+        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+          {/* Location indicator */}
+          <button style={{ display:'flex', alignItems:'center', gap:4, padding:'6px 10px', background:'var(--primary-50)', border:'none', borderRadius:99, fontSize:12, color:'var(--primary)', fontWeight:500, cursor:'pointer' }}>
+            <svg style={{width:14,height:14}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>УБ</span>
+          </button>
+          <NotificationBell onClick={()=>setShowNotif(true)}/>
+          <button onClick={()=>setDrawer(true)}
+            style={{ width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', color:'var(--slate-500)' }}>
+            <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6"  x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
-      {/* ── Page content ── */}
-      <main style={{ flex:1, overflowY:'auto', overflowX:'hidden', background:'var(--parchment)', WebkitOverflowScrolling:'touch' }}>
+      {/* ─── Main content ─── */}
+      <main style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch' }}>
         <Outlet/>
       </main>
 
-      {/* ── HAGA Bottom tab bar ── */}
-      <nav style={{ flexShrink:0, display:'flex', height:56, background:'var(--paper)', borderTop:'1px solid var(--hairline-soft)', paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
-        {TABS.map(t => {
-          const active = isActive(t);
-          return (
-            <NavLink key={t.to} to={t.to}
-              style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, color: active ? 'var(--charter-blue)' : 'var(--steel)', textDecoration:'none', fontSize:10, fontWeight: active ? 600 : 500, position:'relative', WebkitTapHighlightColor:'transparent' }}>
-              <span style={{ width:22, height:22, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                {t.icon}
-              </span>
-              <span>{t.label}</span>
-              {active && <span style={{ position:'absolute', bottom:0, width:24, height:2.5, background:'var(--seal-gold)', borderRadius:'2px 2px 0 0' }}/>}
-            </NavLink>
-          );
-        })}
+      {/* ─── Bottom Tab Bar ─── */}
+      <nav className="haga-tabbar">
+        {TABS.map(t => (
+          <NavLink key={t.to} to={t.to} end={t.end}
+            className={({isActive}) => `haga-tab ${isActive ? 'active' : ''}`}>
+            {({isActive}) => (
+              <>
+                {t.isCenter ? (
+                  <div style={{ width:44, height:44, borderRadius:14, background:'var(--primary)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 16px rgba(91,59,255,0.35)', marginTop:-6 }}>
+                    <span style={{ width:20, height:20 }}>{t.icon(true)}</span>
+                  </div>
+                ) : (
+                  <div className="icon-bg">
+                    <span style={{ width:20, height:20 }}>{t.icon(isActive)}</span>
+                  </div>
+                )}
+                <span>{t.label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
 
-      {/* ── Side drawer (full nav) ── */}
+      {/* ─── Drawer ─── */}
       {drawer && (
-        <div style={{ position:'absolute', inset:0, zIndex:50, display:'flex' }}>
-          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)' }} onClick={()=>setDrawer(false)}/>
-          <div style={{ position:'relative', width:260, height:'100%', display:'flex', flexDirection:'column', background:'var(--paper)', animation:'slideIn .2s ease-out', zIndex:1 }}>
-
-            {/* Drawer header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid var(--hairline-soft)' }}>
-              <button onClick={()=>{setBrand(true);setDrawer(false);}} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0, width:'100%' }}>
-                <HaGaLogo width={22} variant="grad"/>
-                <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:16, fontWeight:500, color:'var(--charter-blue)' }}>HAGA</div>
-              </button>
-              <button onClick={()=>setDrawer(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--steel)', width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <svg style={{ width:18, height:18 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
+        <>
+          <div onClick={()=>setDrawer(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)', zIndex:40 }}/>
+          <div style={{ position:'absolute', top:0, left:0, bottom:0, width:'80%', maxWidth:300, background:'var(--bg-primary)', zIndex:50, display:'flex', flexDirection:'column', boxShadow:'4px 0 24px rgba(0,0,0,0.1)' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid var(--border-light)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <HaGaLogo width={28}/>
+                <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:18, color:'var(--primary)' }}>HAGA</span>
+              </div>
+              <button onClick={()=>setDrawer(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--slate-500)', fontSize:24, lineHeight:1, padding:0 }}>×</button>
             </div>
 
-            {/* Nav items */}
-            <nav style={{ flex:1, padding:'8px', overflowY:'auto', display:'flex', flexDirection:'column', gap:2 }}>
+            <div style={{ flex:1, padding:'12px 8px', overflowY:'auto' }}>
               {[
-                { to:'/',         end:true,  label:'Нүүр хуудас' },
-                { to:'/ajil',     end:false, label:'Ажил хайх' },
-                { to:'/ajiltan',  end:false, label:'Ажилтан хайх' },
-                { to:'/premium',  end:false, label:'Premium' },
-                { to:'/sanhuu',   end:false, label:'Санхүү' },
-                ...(profile?.isAdmin ? [{ to:'/admin', end:false, label:'⚙️ Админ' }] : []),
-              ].map(item => {
-                const active = item.end ? location.pathname === item.to : location.pathname.startsWith(item.to);
-                return (
-                  <NavLink key={item.to} to={item.to} onClick={()=>setDrawer(false)}
-                    style={{ display:'block', padding:'11px 14px', borderRadius:10, color: active ? 'var(--charter-blue)' : 'var(--steel)', background: active ? 'rgba(26,43,74,0.07)' : 'transparent', fontWeight: active ? 600 : 500, fontSize:15, textDecoration:'none' }}>
-                    {item.label}
-                  </NavLink>
-                );
-              })}
-            </nav>
+                { to:'/', label:'Нүүр хуудас', icon:'🏠' },
+                { to:'/ajil', label:'Ажил хайх', icon:'🔍' },
+                { to:'/ajiltan', label:'Ажилтан хайх', icon:'👷' },
+                { to:'/post', label:'Захиалга үүсгэх', icon:'➕' },
+                { to:'/workspace', label:'Workspace', icon:'💼' },
+                { to:'/premium', label:'Premium', icon:'💎' },
+                { to:'/sanhuu', label:'Санхүү', icon:'💳' },
+              ].map(item => (
+                <button key={item.to}
+                  onClick={()=>{ navigate(item.to); setDrawer(false); }}
+                  style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'12px 14px', background: location.pathname===item.to ? 'var(--primary-50)' : 'transparent', border:'none', borderRadius:10, cursor:'pointer', fontSize:14, color: location.pathname===item.to ? 'var(--primary)' : 'var(--ink)', fontWeight: location.pathname===item.to ? 600 : 500, textAlign:'left' }}>
+                  <span style={{fontSize:18}}>{item.icon}</span>
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-            {/* Profile + logout */}
-            <div style={{ padding:'8px', borderTop:'1px solid var(--hairline-soft)' }}>
-              <NavLink to="/profile" onClick={()=>setDrawer(false)}
-                style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:10, color:'var(--ink)', textDecoration:'none', fontSize:14 }}>
-                <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--seal-gold)', color:'var(--charter-blue)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Source Serif 4',serif", fontSize:14, fontWeight:500, flexShrink:0, overflow:'hidden' }}>
-                  {photo ? <img src={photo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : initial}
-                </div>
-                <div style={{ flex:1, overflow:'hidden' }}>
-                  <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:14, fontWeight:500, color:'var(--charter-blue)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name}</div>
-                  <div style={{ fontSize:11, color:'var(--steel)' }}>Профайл харах</div>
-                </div>
-              </NavLink>
-              <button onClick={()=>{ signOut(auth).then(()=>navigate('/login')); setDrawer(false); }}
-                style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:10, color:'var(--heritage-red)', background:'none', border:'none', cursor:'pointer', width:'100%', fontSize:14, fontWeight:500 }}>
-                <svg style={{ width:18, height:18 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            {/* Footer with user */}
+            <div style={{ borderTop:'1px solid var(--border-light)', padding:12 }}>
+              {user && (
+                <button onClick={()=>{ navigate('/profile'); setDrawer(false); }}
+                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:10, background:'var(--bg-secondary)', border:'none', borderRadius:10, cursor:'pointer', marginBottom:6 }}>
+                  <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--primary)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Poppins',sans-serif", fontWeight:600, flexShrink:0, overflow:'hidden' }}>
+                    {profile?.photoURL ? <img src={profile.photoURL} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : (profile?.ner||user.email||'?')[0]?.toUpperCase()}
+                  </div>
+                  <div style={{ flex:1, textAlign:'left', minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:'var(--ink)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {profile?.ner || user.email}
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--slate-500)' }}>Профайл харах</div>
+                  </div>
+                </button>
+              )}
+              <button onClick={()=>signOut(auth)} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'10px 14px', background:'transparent', border:'none', borderRadius:10, cursor:'pointer', fontSize:13, color:'var(--error)', fontWeight:500 }}>
+                <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
                 Гарах
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {showNotif && (
-        <NotificationsPanel onClose={()=>setShowNotif(false)}/>
-      )}
-      {brand && <BrandModal onClose={()=>setBrand(false)}/>}
-      <AIChat/>
+      {/* Notifications panel */}
+      {showNotif && <NotificationsPanel onClose={()=>setShowNotif(false)}/>}
     </div>
   );
 }

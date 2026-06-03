@@ -1,10 +1,13 @@
 import logoImg from '../assets/logo.png';
 
-export default function HaGaLogo({ width = 32, variant = 'default', className = '' }) {
+/**
+ * HAGA Logo - uses the uploaded logo image
+ */
+export default function HaGaLogo({ width = 32, className = '' }) {
   return (
     <img
       src={logoImg}
-      alt="HaGa"
+      alt="HAGA"
       style={{
         width,
         height: width,
