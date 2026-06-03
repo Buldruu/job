@@ -143,6 +143,7 @@ export default function Layout() {
                 { to:'/workspace', label:'Workspace', icon:'💼' },
                 { to:'/premium', label:'Premium', icon:'💎' },
                 { to:'/sanhuu', label:'Санхүү', icon:'💳' },
+                ...(profile?.isAdmin ? [{ to:'/admin', label:'Админ хэсэг', icon:'⚙️' }] : []),
               ].map(item => (
                 <button key={item.to}
                   onClick={()=>{ navigate(item.to); setDrawer(false); }}
