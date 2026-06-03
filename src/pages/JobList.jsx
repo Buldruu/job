@@ -28,7 +28,7 @@ const COLORS = [
 
 const configs = {
   ajil: {
-    title:'Ажлын зар', addLabel:'Профайл нэмэх', addTitle:'Ажил хайгчийн мэдээлэл оруулах',
+    title:'Ажлын зар', addLabel:'Захиалга үүсгэх', addTitle:'Захиалга үүсгэх',
     collection:'jobs', cvUpload:true,
     fields:[
       {key:'ovog',      label:'Овог',              required:true},
@@ -46,7 +46,7 @@ const configs = {
     cardSub:(d)=>d.chiglel, salaryKey:'tsalin',
   },
   ajiltan: {
-    title:'Ажилтан хайх', addLabel:'Зар нэмэх', addTitle:'Ажилтан хайх зар оруулах',
+    title:'Ажилтан хайх', addLabel:'Захиалга үүсгэх', addTitle:'Захиалга үүсгэх',
     collection:'workers',
     // Байгуулга fields
     fieldsOrg:[
@@ -84,7 +84,7 @@ const configs = {
     salaryKey:'tsalin',
   },
   dadlaga: {
-    title:'Дадлага', addLabel:'Зар нэмэх', addTitle:'Дадлагын зар оруулах',
+    title:'Дадлага', addLabel:'Захиалга үүсгэх', addTitle:'Дадлагын зар оруулах',
     collection:'internships',
     fields:[
       {key:'baiguulgiin_ner',   label:'Байгууллагын нэр', required:true},
@@ -470,14 +470,8 @@ export default function JobList({ type }) {
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">HaGA</p>
           <h1 className="text-2xl font-display font-bold text-gray-800">{cfg.title}</h1>
         </div>
-        <button onClick={() => {
-          // Pre-set zarlagch_turul for ajiltan type so Хувь хүн fields show immediately
-          if (type === 'ajiltan' || type === 'ajil') {
-            setForm({ zarlagch_turul: 'Хувь хүн' });
-          }
-          setShowForm(true);
-        }}
-          className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shadow-btn transition-all">
+        <button onClick={() => navigate('/post')}
+          style={{ background:'var(--primary)', color:'#fff', padding:'10px 18px', borderRadius:12, fontSize:13, fontWeight:600, border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 14px rgba(91,59,255,0.25)' }}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
           </svg>

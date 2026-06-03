@@ -1,36 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { MAIN_CATS } from '../data/chiglel';
+import { startChat } from './Chat';
 
 /* ── Status configurations ── */
 const STATUSES = {
-  attention:  { label:'Анхаарал шаардлагатай', bg:'#FEF2F2', text:'#DC2626', dot:'#EF4444' },
-  in_progress:{ label:'Явц дунд',              bg:'#FEF3C7', text:'#D97706', dot:'#F59E0B' },
-  completed:  { label:'Дууссан',               bg:'#DCFCE7', text:'#16A34A', dot:'#22C55E' },
-  offer:      { label:'Санал ирсэн',           bg:'#EDE9FE', text:'#5B3BFF', dot:'#7C3AED' },
-  contract:   { label:'Гэрээ батлагдсан',      bg:'#DCFCE7', text:'#16A34A', dot:'#22C55E' },
+  draft:        { label:'Ноорог',                bg:'#F1F5F9', text:'#64748B', dot:'#94A3B8' },
+  published:    { label:'Нийтлэгдсэн',           bg:'#EDE9FE', text:'#5B3BFF', dot:'#7C3AED' },
+  in_progress:  { label:'Явц дунд',              bg:'#FEF3C7', text:'#D97706', dot:'#F59E0B' },
+  completed:    { label:'Дууссан',               bg:'#DCFCE7', text:'#16A34A', dot:'#22C55E' },
+  cancelled:    { label:'Цуцлагдсан',            bg:'#FEE2E2', text:'#DC2626', dot:'#EF4444' },
+  expired:      { label:'Хугацаа дууссан',       bg:'#F1F5F9', text:'#64748B', dot:'#94A3B8' },
 };
 
-function StatusPill({ status, count }) {
-  const s = STATUSES[status] || STATUSES.in_progress;
-  return (
-    <div style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 12px', background:s.bg, borderRadius:99 }}>
-      <div style={{ width:8, height:8, borderRadius:'50%', background:s.dot }}/>
-      <span style={{ fontSize:11, fontWeight:500, color:s.text }}>{s.label}</span>
-      {count !== undefined && <span style={{ fontSize:11, fontWeight:600, color:s.text, background:'rgba(255,255,255,0.6)', padding:'1px 7px', borderRadius:99 }}>{count}</span>}
-    </div>
-  );
-}
-
-function JobRow({ job, role, status, onClick }) {
-  const s = STATUSES[status] || STATUSES.in_progress;
+/* ── Job card for my jobs ── */
+function JobRow({ job, role='client', onClick }) {
+  const s = STATUSES[job.status||'published'] || STATUSES.published;
   return (
     <div onClick={onClick}
       style={{ display:'flex', gap:12, padding:14, background:'var(--bg-primary)', border:'1px solid var(--border-light)', borderRadius:14, cursor:'pointer', alignItems:'center' }}>
-      <div style={{ width:48, height:48, borderRadius:12, background: job.photo_url ? `url(${job.photo_url}) center/cover` : 'var(--primary-100)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'var(--primary)' }}>
-        {!job.photo_url && <span style={{fontSize:20}}>🔧</span>}
+      <div style={{ width:48, height:48, borderRadius:12, background: (job.photo_urls?.[0]||job.photo_url) ? `url(${job.photo_urls?.[0]||job.photo_url}) center/cover` : 'var(--primary-100)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'var(--primary)' }}>
+        {!(job.photo_urls?.[0]||job.photo_url) && <span style={{fontSize:20}}>🔧</span>}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:14, fontWeight:600, color:'var(--ink)', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -49,109 +42,260 @@ function JobRow({ job, role, status, onClick }) {
   );
 }
 
+/* ── Worker card for search ── */
+function WorkerCard({ worker, onChat }) {
+  return (
+    <div style={{ background:'var(--bg-primary)', border:'1px solid var(--border-light)', borderRadius:14, padding:14, marginBottom:10 }}>
+      <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+        <div style={{ width:54, height:54, borderRadius:'50%', background:'var(--primary-100)', color:'var(--primary)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:600, flexShrink:0, overflow:'hidden', position:'relative' }}>
+          {worker.photoURL ? <img src={worker.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : (worker.ner||'?')[0]?.toUpperCase()}
+          {worker.zovshoorol && (
+            <div style={{ position:'absolute', bottom:-2, right:-2, width:18, height:18, background:'var(--success)', borderRadius:'50%', border:'2px solid var(--bg-primary)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10 }}>✓</div>
+          )}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2 }}>
+            <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:14, fontWeight:600, color:'var(--ink)' }}>
+              {`${worker.ovog||''} ${worker.ner||''}`.trim() || 'Гүйцэтгэгч'}
+            </span>
+          </div>
+          {worker.chiglel && (
+            <div style={{ fontSize:12, color:'var(--primary)', fontWeight:500, marginBottom:4 }}>
+              {worker.chiglel}
+            </div>
+          )}
+          {worker.turshlaga && (
+            <div style={{ fontSize:11, color:'var(--slate-500)', marginBottom:4 }}>
+              📅 {worker.turshlaga} жилийн туршлагатай
+            </div>
+          )}
+          {worker.tsalin && (
+            <div style={{ fontSize:11, color:'var(--ink)', fontWeight:500, marginBottom:6 }}>
+              💰 ₮{worker.tsalin}
+            </div>
+          )}
+          {worker.chadvar && (
+            <div style={{ fontSize:11, color:'var(--slate-500)', lineHeight:1.4, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+              {worker.chadvar}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Portfolio thumbnails */}
+      {(worker.portfolio||[]).length > 0 && (
+        <div style={{ display:'flex', gap:5, marginTop:10, overflowX:'auto' }}>
+          {worker.portfolio.slice(0,4).map((url, i) => (
+            <div key={i} style={{ width:54, height:54, borderRadius:8, overflow:'hidden', flexShrink:0, border:'1px solid var(--border-light)' }}>
+              <img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+            </div>
+          ))}
+          {worker.portfolio.length > 4 && (
+            <div style={{ width:54, height:54, borderRadius:8, background:'var(--slate-100)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, color:'var(--slate-500)', flexShrink:0 }}>
+              +{worker.portfolio.length-4}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display:'flex', gap:8, marginTop:10 }}>
+        <button onClick={onChat}
+          style={{ flex:1, padding:'10px', background:'var(--primary)', color:'#fff', border:'none', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          💬 Чатлах
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Workspace() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [myJobs,  setMyJobs]  = useState([]); // my posted jobs (as client)
-  const [myBids,  setMyBids]  = useState([]); // jobs I bid on (as worker)
-  const [filter,  setFilter]  = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'jobs';
 
+  /* ── My jobs state ── */
+  const [myJobs, setMyJobs] = useState([]);
+
+  /* ── Worker search state ── */
+  const [workers, setWorkers]       = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMain, setFilterMain] = useState('');
+
+  /* ── Load my jobs ── */
   useEffect(() => {
-    if (!user) return;
-    // My posted jobs (I'm the client)
-    const u1 = onSnapshot(
+    if (!user || activeTab !== 'jobs') return;
+    const u = onSnapshot(
       query(collection(db,'workers'), where('uid','==',user.uid)),
       snap => setMyJobs(snap.docs.map(d=>({id:d.id,...d.data()}))),
-      ()=>{}
+      () => {}
     );
-    // TODO: query bids/offers I've made
-    return () => u1();
-  }, [user]);
+    return () => u();
+  }, [user, activeTab]);
 
+  /* ── Load workers for search ── */
+  useEffect(() => {
+    if (activeTab !== 'workers') return;
+    const u = onSnapshot(
+      query(collection(db,'users')),
+      snap => {
+        const all = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        // Only show users with profile data (chiglel)
+        setWorkers(all.filter(u => u.chiglel && u.id !== user?.uid));
+      },
+      () => {}
+    );
+    return () => u();
+  }, [activeTab, user]);
+
+  /* ── Worker filtered list ── */
+  const filteredWorkers = workers.filter(w => {
+    if (filterMain && w.chiglel_main !== filterMain) return false;
+    if (searchTerm) {
+      const s = searchTerm.toLowerCase();
+      const blob = `${w.ner||''} ${w.ovog||''} ${w.chiglel||''} ${w.chadvar||''} ${w.hayg||''}`.toLowerCase();
+      if (!blob.includes(s)) return false;
+    }
+    return true;
+  });
+
+  /* ── Stats ── */
   const totals = {
-    attention: 0,
+    attention:   myJobs.filter(j => j.status === 'published').length,
     in_progress: myJobs.filter(j => j.status === 'in_progress').length,
-    completed: myJobs.filter(j => j.status === 'completed').length,
-    all: myJobs.length,
+    completed:   myJobs.filter(j => j.status === 'completed').length,
+    all:         myJobs.length,
   };
+
+  /* ── Chat handler ── */
+  const handleChat = async (worker) => {
+    if (!user) { navigate('/login'); return; }
+    try {
+      const chatId = await startChat(user.uid, worker.id, '');
+      navigate('/chat', { state:{ openChatId: chatId, otherUid: worker.id } });
+    } catch(e) {
+      alert('Чат эхлүүлэхэд алдаа гарлаа: '+e.message);
+    }
+  };
+
+  const setTab = (t) => setSearchParams({ tab:t }, { replace:true });
 
   return (
     <div style={{ padding:16, background:'var(--bg-secondary)', minHeight:'100%' }}>
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }} className="animate-fade-up">
-        <div>
-          <h1 style={{ fontFamily:"'Poppins',sans-serif", fontSize:24, fontWeight:700, color:'var(--ink)', margin:0 }}>Workspace</h1>
-          <div style={{ fontSize:12, color:'var(--slate-500)', marginTop:2 }}>Миний бүх ажлууд</div>
-        </div>
+      <div style={{ marginBottom:14 }} className="animate-fade-up">
+        <h1 style={{ fontFamily:"'Poppins',sans-serif", fontSize:24, fontWeight:700, color:'var(--ink)', margin:0 }}>Workspace</h1>
+        <div style={{ fontSize:12, color:'var(--slate-500)', marginTop:2 }}>Ажил, гүйцэтгэгчдийг нэг дороос</div>
       </div>
 
-      {/* Status summary cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:8, marginBottom:18 }} className="animate-fade-up-delay">
-        <div style={{ background:'var(--bg-primary)', borderRadius:12, padding:'12px 8px', textAlign:'center', border:'1px solid var(--border-light)' }}>
-          <div style={{ fontSize:10, color:'var(--slate-500)', marginBottom:2 }}>Анхаарал</div>
-          <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'var(--error)' }}>{totals.attention}</div>
-        </div>
-        <div style={{ background:'var(--bg-primary)', borderRadius:12, padding:'12px 8px', textAlign:'center', border:'1px solid var(--border-light)' }}>
-          <div style={{ fontSize:10, color:'var(--slate-500)', marginBottom:2 }}>Явц дунд</div>
-          <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'var(--warning)' }}>{totals.in_progress}</div>
-        </div>
-        <div style={{ background:'var(--bg-primary)', borderRadius:12, padding:'12px 8px', textAlign:'center', border:'1px solid var(--border-light)' }}>
-          <div style={{ fontSize:10, color:'var(--slate-500)', marginBottom:2 }}>Дууссан</div>
-          <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'var(--success)' }}>{totals.completed}</div>
-        </div>
-        <div style={{ background:'var(--primary)', borderRadius:12, padding:'12px 8px', textAlign:'center' }}>
-          <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', marginBottom:2 }}>Бүгд</div>
-          <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'#fff' }}>{totals.all}</div>
-        </div>
+      {/* Tab switcher */}
+      <div style={{ display:'flex', gap:6, marginBottom:16, background:'var(--bg-primary)', padding:4, borderRadius:12, border:'1px solid var(--border-light)' }}>
+        <button onClick={()=>setTab('jobs')}
+          style={{ flex:1, padding:'10px', background: activeTab==='jobs' ? 'var(--primary)' : 'transparent', color: activeTab==='jobs' ? '#fff' : 'var(--slate-500)', border:'none', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          💼 Миний ажлууд
+        </button>
+        <button onClick={()=>setTab('workers')}
+          style={{ flex:1, padding:'10px', background: activeTab==='workers' ? 'var(--primary)' : 'transparent', color: activeTab==='workers' ? '#fff' : 'var(--slate-500)', border:'none', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          👷 Ажилтан хайх
+        </button>
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display:'flex', gap:6, marginBottom:14, overflowX:'auto', paddingBottom:4 }}>
-        {[
-          { k:'all',         l:'Бүгд' },
-          { k:'client',      l:'Захиалсан' },
-          { k:'worker',      l:'Гүйцэтгэж буй' },
-          { k:'offered',     l:'Санал өгсөн' },
-        ].map(t => (
-          <button key={t.k} onClick={()=>setFilter(t.k)}
-            style={{ flexShrink:0, padding:'8px 14px', background: filter===t.k ? 'var(--primary)' : 'var(--bg-primary)', color: filter===t.k ? '#fff' : 'var(--slate-500)', border: filter===t.k ? 'none' : '1px solid var(--border-light)', borderRadius:99, fontSize:12, fontWeight:filter===t.k?600:500, cursor:'pointer', whiteSpace:'nowrap' }}>
-            {t.l}
-          </button>
-        ))}
-      </div>
-
-      {/* Section: Миний ажлууд */}
-      <div style={{ marginBottom:16 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <h2 style={{ fontFamily:"'Poppins',sans-serif", fontSize:14, fontWeight:600, color:'var(--ink)', margin:0 }}>Миний ажлууд</h2>
-        </div>
-
-        {myJobs.length === 0 ? (
-          <div style={{ background:'var(--bg-primary)', border:'1px solid var(--border-light)', borderRadius:16, padding:'32px 24px', textAlign:'center' }}>
-            <div style={{ fontSize:36, marginBottom:10 }}>💼</div>
-            <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:15, fontWeight:600, color:'var(--ink)', marginBottom:6 }}>Идэвхтэй ажил алга</div>
-            <div style={{ fontSize:12, color:'var(--slate-500)', lineHeight:1.5, marginBottom:14 }}>
-              Ажил нийтэлж гүйцэтгэгчдээс санал авах эсвэл Jobs хэсгээс ажил хайж эхлээрэй.
+      {/* ═══════════ TAB 1: MY JOBS ═══════════ */}
+      {activeTab === 'jobs' && (
+        <>
+          {/* Status summary */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:8, marginBottom:18 }} className="animate-fade-up-delay">
+            <div style={{ background:'var(--bg-primary)', borderRadius:12, padding:'12px 8px', textAlign:'center', border:'1px solid var(--border-light)' }}>
+              <div style={{ fontSize:10, color:'var(--slate-500)', marginBottom:2 }}>Анхаарал</div>
+              <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'var(--primary)' }}>{totals.attention}</div>
             </div>
-            <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
-              <button onClick={()=>navigate('/post')} className="btn-primary" style={{ fontSize:13, padding:'10px 18px' }}>
-                + Ажил нийтлэх
-              </button>
-              <button onClick={()=>navigate('/ajil')} className="btn-secondary" style={{ fontSize:13, padding:'10px 18px' }}>
-                Ажил хайх
-              </button>
+            <div style={{ background:'var(--bg-primary)', borderRadius:12, padding:'12px 8px', textAlign:'center', border:'1px solid var(--border-light)' }}>
+              <div style={{ fontSize:10, color:'var(--slate-500)', marginBottom:2 }}>Явц дунд</div>
+              <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'var(--warning)' }}>{totals.in_progress}</div>
+            </div>
+            <div style={{ background:'var(--bg-primary)', borderRadius:12, padding:'12px 8px', textAlign:'center', border:'1px solid var(--border-light)' }}>
+              <div style={{ fontSize:10, color:'var(--slate-500)', marginBottom:2 }}>Дууссан</div>
+              <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'var(--success)' }}>{totals.completed}</div>
+            </div>
+            <div style={{ background:'var(--primary)', borderRadius:12, padding:'12px 8px', textAlign:'center' }}>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', marginBottom:2 }}>Бүгд</div>
+              <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:20, fontWeight:700, color:'#fff' }}>{totals.all}</div>
             </div>
           </div>
-        ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {myJobs.map(j => (
-              <JobRow key={j.id} job={j} role="client" status={j.status||'in_progress'}
-                onClick={()=>navigate(`/ajiltan?id=${j.id}`)}/>
+
+          {/* My jobs list */}
+          {myJobs.length === 0 ? (
+            <div style={{ background:'var(--bg-primary)', border:'1px solid var(--border-light)', borderRadius:16, padding:'32px 24px', textAlign:'center' }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>💼</div>
+              <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:15, fontWeight:600, color:'var(--ink)', marginBottom:6 }}>Захиалга алга байна</div>
+              <div style={{ fontSize:12, color:'var(--slate-500)', lineHeight:1.5, marginBottom:14 }}>
+                Шинэ ажлын захиалга үүсгээд<br/>гүйцэтгэгчдээс санал авна уу.
+              </div>
+              <button onClick={()=>navigate('/post')} className="btn-primary" style={{ fontSize:13, padding:'10px 20px' }}>
+                + Захиалга үүсгэх
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {myJobs.map(j => (
+                <JobRow key={j.id} job={j} role="client" onClick={()=>navigate(`/ajiltan?id=${j.id}`)}/>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══════════ TAB 2: WORKER SEARCH ═══════════ */}
+      {activeTab === 'workers' && (
+        <>
+          {/* Search input */}
+          <div style={{ position:'relative', marginBottom:12 }}>
+            <svg style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',width:16,height:16,color:'var(--slate-400)'}}
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
+              placeholder="Нэр, чадвар, байршил хайх..."
+              className="input-base" style={{ paddingLeft:38 }}/>
+          </div>
+
+          {/* Category chips */}
+          <div style={{ display:'flex', gap:6, overflowX:'auto', marginBottom:14, paddingBottom:4 }}>
+            <button onClick={()=>setFilterMain('')}
+              style={{ flexShrink:0, padding:'7px 14px', background: !filterMain ? 'var(--primary)' : 'var(--bg-primary)', color: !filterMain ? '#fff' : 'var(--slate-500)', border: !filterMain ? 'none' : '1px solid var(--border-light)', borderRadius:99, fontSize:12, fontWeight:500, cursor:'pointer', whiteSpace:'nowrap' }}>
+              Бүгд
+            </button>
+            {MAIN_CATS.map(c => (
+              <button key={c} onClick={()=>setFilterMain(filterMain===c?'':c)}
+                style={{ flexShrink:0, padding:'7px 14px', background: filterMain===c ? 'var(--primary)' : 'var(--bg-primary)', color: filterMain===c ? '#fff' : 'var(--slate-500)', border: filterMain===c ? 'none' : '1px solid var(--border-light)', borderRadius:99, fontSize:12, fontWeight:500, cursor:'pointer', whiteSpace:'nowrap' }}>
+                {c}
+              </button>
             ))}
           </div>
-        )}
-      </div>
 
+          {/* Workers count */}
+          <div style={{ fontSize:11, color:'var(--slate-500)', marginBottom:10 }}>
+            {filteredWorkers.length} гүйцэтгэгч олдлоо
+          </div>
+
+          {/* Workers list */}
+          {filteredWorkers.length === 0 ? (
+            <div style={{ background:'var(--bg-primary)', border:'1px solid var(--border-light)', borderRadius:16, padding:'32px 24px', textAlign:'center' }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>🔍</div>
+              <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:15, fontWeight:600, color:'var(--ink)', marginBottom:6 }}>Гүйцэтгэгч олдсонгүй</div>
+              <div style={{ fontSize:12, color:'var(--slate-500)', lineHeight:1.5 }}>
+                Хайлтын утгаа өөрчилж дахин үзнэ үү.
+              </div>
+            </div>
+          ) : (
+            <div>
+              {filteredWorkers.map(w => (
+                <WorkerCard key={w.id} worker={w} onChat={()=>handleChat(w)}/>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

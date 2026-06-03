@@ -59,6 +59,8 @@ export default function App() {
           <Route path="ajil"           element={<JobList type="ajil"/>}/>
           <Route path="ajiltan"        element={<JobList type="ajiltan"/>}/>
           <Route path="chat"           element={<Chat/>}/>
+          <Route path="post"           element={<Post/>}/>
+          <Route path="workspace"      element={<Workspace/>}/>
           <Route path="premium"         element={<ProSection/>}/>
           <Route path="mergejilten"    element={<Mergejilten/>}/>
           <Route path="sanhuu"         element={<Finance/>}/>
