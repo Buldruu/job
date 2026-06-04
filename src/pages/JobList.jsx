@@ -883,16 +883,39 @@ export default function JobList({ type }) {
           {selected.uid && selected.uid !== user?.uid && (
             <div style={{ marginTop:12 }}>
               <button
+                disabled={chatLoading}
                 onClick={async () => {
-                  const chatId = await startChat(user.uid, selected.uid, selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected));
-                  navigate('/chat', { state: { openChatId: chatId, otherUid: selected.uid } });
-                  setSelected(null);
+                  if (!user) { alert('Эхлээд нэвтэрнэ үү'); navigate('/login'); return; }
+                  if (chatLoading) return;
+                  setChatLoading(true);
+                  try {
+                    const jobTitle = selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected) || '';
+                    const chatId = await startChat(user.uid, selected.uid, jobTitle);
+                    if (!chatId) throw new Error('Chat ID хоосон ирлээ');
+                    // Close modal AND navigate
+                    setSelected(null);
+                    setChatLoading(false);
+                    navigate('/chat', { state: { openChatId: chatId, otherUid: selected.uid } });
+                  } catch(err) {
+                    setChatLoading(false);
+                    console.error('startChat error:', err);
+                    alert('Чат эхлүүлэхэд алдаа гарлаа:\n\n' + (err?.message || err) + '\n\nFirestore rules шалгана уу.');
+                  }
                 }}
-                style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'12px', background:'var(--charter-blue)', color:'var(--parchment)', border:'none', borderRadius:8, fontSize:14, fontWeight:500, cursor:'pointer' }}>
-                <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                Ажилд авах · Чат эхлүүлэх
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'12px', background: chatLoading ? 'var(--primary-600)' : 'var(--primary)', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:600, cursor: chatLoading ? 'wait' : 'pointer', opacity: chatLoading ? 0.7 : 1 }}>
+                {chatLoading ? (
+                  <>
+                    <div style={{ width:16, height:16, border:'2px solid #fff', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.6s linear infinite' }}/>
+                    Чат үүсгэж байна...
+                  </>
+                ) : (
+                  <>
+                    <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Ажилд авах · Чат эхлүүлэх
+                  </>
+                )}
               </button>
             </div>
           )}
