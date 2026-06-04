@@ -913,7 +913,7 @@ export default function JobList({ type }) {
                     <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
-                    Ажилд авах · Чат эхлүүлэх
+                    Ажил эхлүүлэх
                   </>
                 )}
               </button>
@@ -1306,12 +1306,24 @@ function ChiglелSelect({ value, onChange }) {
 
 function Modal({ children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={onClose}/>
-      <div
-        className="relative bg-white rounded-2xl shadow-card-hover p-6 w-full z-10 animate-fade-up border border-surf-200"
-        onClick={e => e.stopPropagation()}
-      >
+    <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(15,23,42,0.45)', backdropFilter:'blur(2px)' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()}
+        className="animate-fade-up"
+        style={{
+          position:'relative',
+          background:'#FFFFFF',
+          borderTopLeftRadius:20,
+          borderTopRightRadius:20,
+          padding:20,
+          width:'100%',
+          maxWidth:480,
+          maxHeight:'92dvh',
+          overflowY:'auto',
+          boxShadow:'0 -10px 40px rgba(15,23,42,0.18)',
+          paddingBottom:'calc(20px + env(safe-area-inset-bottom,0))',
+        }}>
+        {/* Drag handle */}
+        <div style={{ width:36, height:4, background:'var(--slate-200)', borderRadius:99, margin:'0 auto 14px' }}/>
         {children}
       </div>
     </div>

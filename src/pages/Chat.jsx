@@ -211,6 +211,25 @@ export default function Chat() {
   // Read navigation state once on mount — open specific chat
   const navState = useRef(location.state || {});
 
+  // INSTANT auto-open — open chat room immediately without waiting for snapshot
+  useEffect(() => {
+    const {openChatId, otherUid} = navState.current;
+    if (openChatId && user) {
+      // Open immediately with minimal info — full user data loads in background
+      setActive({ chatId: openChatId, otherUser: { id: otherUid }, jobTitle: '' });
+      navState.current = {};
+      // Background: fetch other user's profile
+      (async () => {
+        try {
+          const s = await getDoc(doc(db,'users',otherUid));
+          if (s.exists()) {
+            setActive(a => a ? { ...a, otherUser: { id: otherUid, ...s.data() } } : a);
+          }
+        } catch(e) {}
+      })();
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -232,17 +251,6 @@ export default function Chat() {
       }));
       setUserCache(cache);
       setChats(list);
-
-      // Auto-open from navigation state (after "Ажилд авах" click)
-      const {openChatId, otherUid} = navState.current;
-      if (openChatId) {
-        const chat = list.find(c=>c.id===openChatId);
-        if (chat) {
-          const other = cache[otherUid] || {id:otherUid};
-          setActive({chatId:openChatId, otherUser:other, jobTitle:chat.jobTitle});
-          navState.current = {}; // clear so it doesn't re-trigger
-        }
-      }
     }, ()=>{});
   }, [user]);
 
