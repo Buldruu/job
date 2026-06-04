@@ -309,7 +309,7 @@ export default function Chat() {
 }
 
 /* ── startChat helper ── */
-export async function startChat(currentUid, otherUid, jobTitle='') {
+export async function startChat(currentUid, otherUid, jobTitle='', jobId='') {
   if (!currentUid || !otherUid) {
     throw new Error('Missing user IDs');
   }
@@ -317,25 +317,31 @@ export async function startChat(currentUid, otherUid, jobTitle='') {
     throw new Error('Cannot chat with yourself');
   }
   try {
-    // Find existing chat
+    // Find existing chat — same TWO users + SAME jobId = same chat
+    // Different jobId (different job posting) = NEW chat each time
     const q    = query(collection(db,'chats'), where('members','array-contains',currentUid));
     const snap = await getDocs(q);
     const existing = snap.docs.find(d => {
       const data = d.data();
       const m = data.members || [];
-      return m.includes(otherUid) && (data.jobTitle||'') === (jobTitle||'');
+      // Must include other user AND match jobId (if jobId provided)
+      if (!m.includes(otherUid)) return false;
+      // If we passed a jobId, match on jobId
+      if (jobId) return (data.jobId||'') === jobId;
+      // If no jobId, fall back to matching on jobTitle for old chats
+      return (data.jobTitle||'') === (jobTitle||'') && !data.jobId;
     });
     if (existing) return existing.id;
   } catch(e) {
     console.warn('Existing chat check failed:', e);
-    // Continue to create anyway
   }
 
-  // Create new chat with members ordered consistently
+  // Create new chat
   const members = [currentUid, otherUid].sort();
   const ref = await addDoc(collection(db,'chats'), {
     members,
     jobTitle: jobTitle || '',
+    jobId:    jobId    || '',
     lastMsg:     '',
     lastMsgAt:   serverTimestamp(),
     unread:      {[currentUid]:0, [otherUid]:1},

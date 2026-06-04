@@ -890,7 +890,7 @@ export default function JobList({ type }) {
                   setChatLoading(true);
                   try {
                     const jobTitle = selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected) || '';
-                    const chatId = await startChat(user.uid, selected.uid, jobTitle);
+                    const chatId = await startChat(user.uid, selected.uid, jobTitle, selected.id);
                     if (!chatId) throw new Error('Chat ID хоосон ирлээ');
                     // Close modal AND navigate
                     setSelected(null);
