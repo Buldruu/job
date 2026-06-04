@@ -6,11 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 
 const C = {
-  ch:'#1A2B4A', ch5:'#EEF1F6', pg:'#F7F2E9',
-  gd:'#C9A961', gdd:'#A8893F', gd5:'#FAF1DC',
-  sl:'#6B7280', sll:'#9CA3AF', hl:'#D9D2C2', hls:'#E8E2D2',
-  pp:'#FFFFFF', ink:'#1F1F1F',
-  vg:'#2D7A4F', vg5:'#EDF7F2',
+  ch:'#5B3BFF', ch5:'#F5F3FF', pg:'#F5F7FF',
+  gd:'#FFB020', gdd:'#D97706', gd5:'#FEF3C7',
+  sl:'#64748B', sll:'#94A3B8', hl:'#E2E8F0', hls:'#F1F5F9',
+  pp:'#FFFFFF', ink:'#1E293B',
+  vg:'#22C55E', vg5:'#DCFCE7',
 };
 
 function timeAgo(ts) {
@@ -302,19 +302,32 @@ export default function Chat() {
 
 /* ── startChat helper ── */
 export async function startChat(currentUid, otherUid, jobTitle='') {
-  // Find existing chat
-  const q    = query(collection(db,'chats'), where('members','array-contains',currentUid));
-  const snap = await getDocs(q);
-  const existing = snap.docs.find(d => {
-    const m = d.data().members||[];
-    return m.includes(otherUid) && d.data().jobTitle===jobTitle;
-  });
-  if (existing) return existing.id;
+  if (!currentUid || !otherUid) {
+    throw new Error('Missing user IDs');
+  }
+  if (currentUid === otherUid) {
+    throw new Error('Cannot chat with yourself');
+  }
+  try {
+    // Find existing chat
+    const q    = query(collection(db,'chats'), where('members','array-contains',currentUid));
+    const snap = await getDocs(q);
+    const existing = snap.docs.find(d => {
+      const data = d.data();
+      const m = data.members || [];
+      return m.includes(otherUid) && (data.jobTitle||'') === (jobTitle||'');
+    });
+    if (existing) return existing.id;
+  } catch(e) {
+    console.warn('Existing chat check failed:', e);
+    // Continue to create anyway
+  }
 
-  // Create new
+  // Create new chat with members ordered consistently
+  const members = [currentUid, otherUid].sort();
   const ref = await addDoc(collection(db,'chats'), {
-    members: [currentUid, otherUid],
-    jobTitle,
+    members,
+    jobTitle: jobTitle || '',
     lastMsg:     '',
     lastMsgAt:   serverTimestamp(),
     unread:      {[currentUid]:0, [otherUid]:1},

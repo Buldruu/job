@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const C = {
-  ch:'#1A2B4A', ch5:'#EEF1F6', pg:'#F7F2E9',
-  sl:'#6B7280', sll:'#9CA3AF',
-  hl:'#D9D2C2', hls:'#E8E2D2',
-  pp:'#FFFFFF', ink:'#1F1F1F',
+  ch:'#5B3BFF', ch5:'#F5F3FF', pg:'#F5F7FF', pgd:'#EDE9FE',
+  gd:'#FFB020', gdd:'#D97706', gd5:'#FEF3C7',
+  sl:'#64748B', sll:'#94A3B8', hl:'#E2E8F0', hls:'#F1F5F9',
+  pp:'#FFFFFF', ink:'#1E293B',
+  vg:'#22C55E', vg5:'#DCFCE7', rd:'#EF4444', rd5:'#FEE2E2',
 };
 
 const GKEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
@@ -47,7 +48,7 @@ function MapPreview({ lat, lng, address }) {
       {/* Address overlay */}
       <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'rgba(26,43,74,0.85)', padding:'8px 12px', backdropFilter:'blur(4px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <svg style={{width:12,height:12,color:'#C9A961',flexShrink:0}} viewBox="0 0 24 24" fill="currentColor">
+          <svg style={{width:12,height:12,color:'#FFB020',flexShrink:0}} viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
           <span style={{ fontSize:11, color:'#F7F2E9', lineHeight:1.3 }}>{address}</span>

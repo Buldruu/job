@@ -6,11 +6,11 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 const C = {
-  ch:'#1A2B4A', ch5:'#EEF1F6', pg:'#F7F2E9', pgd:'#EDE5D2',
-  gd:'#C9A961', gdd:'#A8893F', gd5:'#FAF1DC',
-  sl:'#6B7280', sll:'#9CA3AF', hl:'#D9D2C2', hls:'#E8E2D2',
-  pp:'#FFFFFF', ink:'#1F1F1F',
-  vg:'#2D7A4F', vg5:'#EDF7F2',
+  ch:'#5B3BFF', ch5:'#F5F3FF', pg:'#F5F7FF', pgd:'#EDE9FE',
+  gd:'#FFB020', gdd:'#D97706', gd5:'#FEF3C7',
+  sl:'#64748B', sll:'#94A3B8', hl:'#E2E8F0', hls:'#F1F5F9',
+  pp:'#FFFFFF', ink:'#1E293B',
+  vg:'#22C55E', vg5:'#DCFCE7', rd:'#EF4444', rd5:'#FEE2E2',
 };
 
 const TYPES = {
