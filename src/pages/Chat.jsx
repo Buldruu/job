@@ -213,29 +213,33 @@ export default function Chat() {
 
   // INSTANT auto-open — open chat room immediately without waiting for snapshot
   useEffect(() => {
-    const {openChatId, otherUid} = navState.current;
+    const {openChatId, otherUid, otherUserHint, jobTitle: navJobTitle} = navState.current;
     if (openChatId && user) {
-      // Open immediately with minimal info — full user data loads in background
-      setActive({ chatId: openChatId, otherUser: { id: otherUid }, jobTitle: '' });
+      // Open immediately with hint info (if provided from JobList)
+      setActive({
+        chatId: openChatId,
+        otherUser: otherUserHint || { id: otherUid },
+        jobTitle: navJobTitle || ''
+      });
       navState.current = {};
-      // Background: fetch other user's profile
+      // Background: fetch full user profile
       (async () => {
         try {
           const s = await getDoc(doc(db,'users',otherUid));
           if (s.exists()) {
             setActive(a => a ? { ...a, otherUser: { id: otherUid, ...s.data() } } : a);
           }
-        } catch(e) {}
+        } catch(e) { console.warn('Other user fetch failed:', e); }
       })();
     }
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
+    // No orderBy here — Firestore would need a composite index. Sort client-side instead.
     const q = query(
       collection(db,'chats'),
-      where('members','array-contains',user.uid),
-      orderBy('lastMsgAt','desc')
+      where('members','array-contains',user.uid)
     );
     return onSnapshot(q, async snap => {
       const list = snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -250,8 +254,16 @@ export default function Chat() {
         } catch(e) {}
       }));
       setUserCache(cache);
+      // Sort by lastMsgAt desc client-side
+      list.sort((a,b) => {
+        const ta = a.lastMsgAt?.toMillis ? a.lastMsgAt.toMillis() : 0;
+        const tb = b.lastMsgAt?.toMillis ? b.lastMsgAt.toMillis() : 0;
+        return tb - ta;
+      });
       setChats(list);
-    }, ()=>{});
+    }, (err) => {
+      console.error('Chat list query error:', err);
+    });
   }, [user]);
 
   if (active) {
@@ -268,7 +280,7 @@ export default function Chat() {
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:300, padding:'48px 24px', textAlign:'center' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>💬</div>
           <div style={{ fontFamily:"'Source Serif 4',serif", fontSize:17, fontWeight:500, color:C.ch, marginBottom:8 }}>Чат байхгүй</div>
-          <div style={{ fontSize:13, color:C.sl, lineHeight:1.5 }}>Зарын дэлгэрэнгүй дотор "Ажилд авах" дарахад чат автоматаар үүснэ</div>
+          <div style={{ fontSize:13, color:C.sl, lineHeight:1.5 }}>Зар нээгээд "Ажил эхлүүлэх" товч дарж чат эхлүүлнэ үү</div>
         </div>
       ) : (
         chats.map(chat => {

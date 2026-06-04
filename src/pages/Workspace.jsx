@@ -112,7 +112,14 @@ export default function Workspace() {
     if (!user) { navigate('/login'); return; }
     try {
       const chatId = await startChat(user.uid, seeker.uid, '');
-      navigate('/chat', { state:{ openChatId: chatId, otherUid: seeker.uid } });
+      const otherUserHint = {
+        id: seeker.uid,
+        ner: seeker.ner || 'Ажил хайгч',
+        ovog: seeker.ovog || '',
+        photoURL: seeker.photoURL || '',
+        chiglel: seeker.chiglel || '',
+      };
+      navigate('/chat', { state:{ openChatId: chatId, otherUid: seeker.uid, otherUserHint } });
     } catch(e) {
       alert('Чат эхлүүлэхэд алдаа: '+e.message);
     }

@@ -169,6 +169,7 @@ export default function JobList({ type }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [featuring, setFeaturing] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [myRating, setMyRating] = useState(0);       // confirmed rating
   const [pendingRating, setPendingRating] = useState(0); // hover/pick before confirm
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
@@ -892,10 +893,17 @@ export default function JobList({ type }) {
                     const jobTitle = selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected) || '';
                     const chatId = await startChat(user.uid, selected.uid, jobTitle, selected.id);
                     if (!chatId) throw new Error('Chat ID хоосон ирлээ');
-                    // Close modal AND navigate
+                    // Build worker hint info so chat shows name immediately
+                    const otherUserHint = {
+                      id: selected.uid,
+                      ner: selectedOwner?.ner || selected.ner || selected.baiguulgiin_ner || 'Захиалагч',
+                      ovog: selectedOwner?.ovog || '',
+                      photoURL: selectedOwner?.photoURL || '',
+                      chiglel: selectedOwner?.chiglel || '',
+                    };
                     setSelected(null);
                     setChatLoading(false);
-                    navigate('/chat', { state: { openChatId: chatId, otherUid: selected.uid } });
+                    navigate('/chat', { state: { openChatId: chatId, otherUid: selected.uid, otherUserHint, jobTitle } });
                   } catch(err) {
                     setChatLoading(false);
                     console.error('startChat error:', err);
