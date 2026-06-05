@@ -70,16 +70,29 @@ export default function Admin() {
   // User search
   const [userSearch, setUserSearch] = useState('');
 
+  // Track presence (online users)
+  const [presence, setPresence] = useState([]);
+  const [loadError, setLoadError] = useState('');
+
   useEffect(() => {
-    const unsub1 = onSnapshot(collection(db, 'users'), snap => {
-      setUsers(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-    });
+    setLoadError('');
+    const unsub1 = onSnapshot(
+      collection(db, 'users'),
+      snap => setUsers(snap.docs.map(d => ({ id:d.id, ...d.data() }))),
+      err => { console.error('Users listen error:', err); setLoadError('Хэрэглэгчдийн жагсаалт уншиж чадсангүй: '+err.message); }
+    );
     const unsub2 = onSnapshot(
       query(collection(db,'transactions'), orderBy('createdAt','desc')),
       snap => setTxns(snap.docs.map(d => ({ id:d.id, ...d.data() }))),
-      () => {}
+      err => console.warn('Transactions listen error (index may be needed):', err)
     );
-    return () => { unsub1(); unsub2(); };
+    // Presence (online status)
+    const unsub3 = onSnapshot(
+      collection(db,'presence'),
+      snap => setPresence(snap.docs.map(d => ({ id:d.id, ...d.data() }))),
+      err => console.warn('Presence listen error:', err)
+    );
+    return () => { unsub1(); unsub2(); unsub3(); };
   }, []);
 
   if (!profile?.isAdmin) {
@@ -104,6 +117,19 @@ export default function Admin() {
   const newLastMonth = users.filter(u => {
     const d = u.createdAt?.toDate?.() || (u.createdAt ? new Date(u.createdAt) : null);
     return d && d >= lastMonthStart && d < thisMonthStart;
+  }).length;
+
+  // Online users — presence updated in last 5 minutes
+  const fiveMinAgo = Date.now() - 5*60*1000;
+  const onlineCount = presence.filter(p => {
+    const ls = p.lastSeen?.toDate?.()?.getTime() || (p.lastSeen ? new Date(p.lastSeen).getTime() : 0);
+    return ls > fiveMinAgo;
+  }).length;
+  // Active today
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const activeToday = presence.filter(p => {
+    const ls = p.lastSeen?.toDate?.()?.getTime() || (p.lastSeen ? new Date(p.lastSeen).getTime() : 0);
+    return ls > todayStart;
   }).length;
 
   const premiumUsers = users.filter(u => {
@@ -163,7 +189,7 @@ export default function Admin() {
     ? users.filter(u =>
         [u.ner, u.ovog, u.email, u.id].some(v => (v||'').toLowerCase().includes(userSearch.toLowerCase()))
       )
-    : users.slice(0,30);
+    : users;
 
   const TABS = [
     { key:'stats',   label:'📊 Статистик' },
@@ -198,9 +224,18 @@ export default function Admin() {
         {/* ── STATS TAB ── */}
         {tab === 'stats' && (
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            {loadError && (
+              <div style={{ background:'#FEF2F2', border:'1px solid #FCA5A5', color:'#DC2626', padding:'10px 14px', borderRadius:10, fontSize:12 }}>
+                ⚠️ {loadError}
+              </div>
+            )}
             {/* Key stats */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
               <StatCard icon="👥" label="Нийт хэрэглэгч" value={users.length} color={C.ch5}/>
+              <StatCard icon="🟢" label="Одоо онлайн" value={onlineCount}
+                sub={onlineCount > 0 ? `Сүүлийн 5 мин` : 'Хэн ч онлайн биш'}
+                color="#DCFCE7"/>
+              <StatCard icon="📅" label="Өнөөдөр идэвхтэй" value={activeToday} color="#FEF3C7"/>
               <StatCard icon="🆕" label="Энэ сар" value={newThisMonth}
                 sub={newLastMonth > 0 ? `Өнгөрсөн сар: ${newLastMonth}` : undefined}
                 color="#EDF7F2"/>

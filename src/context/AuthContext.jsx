@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const AuthContext = createContext(null);
@@ -29,6 +29,25 @@ export function AuthProvider({ children }) {
     });
     return () => { unsub(); if (profileUnsub) profileUnsub(); };
   }, []);
+
+  // ── Presence tracking — update lastSeen every minute while user is online
+  useEffect(() => {
+    if (!user) return;
+    const updatePresence = async () => {
+      try {
+        await setDoc(doc(db, 'presence', user.uid), {
+          uid: user.uid,
+          lastSeen: serverTimestamp(),
+        }, { merge: true });
+      } catch(e) { /* silent */ }
+    };
+    updatePresence(); // Update immediately
+    const id = setInterval(updatePresence, 60_000); // every 60 sec
+    // Also update on visibility change
+    const onVis = () => { if (!document.hidden) updatePresence(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, [user]);
 
   const refreshProfile = async () => {
     if (user) {
