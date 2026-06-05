@@ -68,7 +68,7 @@ function SeekerCard({ seeker, onChat, onView }) {
       <div style={{ display:'flex', gap:8, marginTop:10 }}>
         <button onClick={onChat}
           style={{ flex:1, padding:'10px', background:'var(--primary)', color:'#fff', border:'none', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-          💬 Чатлах
+          📋 Ажил эхлүүлэх
         </button>
       </div>
     </div>
@@ -111,7 +111,24 @@ export default function Workspace() {
   const handleChat = async (seeker) => {
     if (!user) { navigate('/login'); return; }
     try {
-      const chatId = await startChat(user.uid, seeker.uid, '');
+      const jobTitle = seeker.chiglel || 'Ажил';
+      const chatId = await startChat(user.uid, seeker.uid, jobTitle, seeker.id);
+      // Auto-send initial offer
+      try {
+        const { addDoc, collection, serverTimestamp, doc, updateDoc } = await import('firebase/firestore');
+        const greetMsg = `📋 Сайн байна уу! Та "${jobTitle}" чиглэлээр мэргэшсэн гэж танилцлаа. Танд ажил санал болгож байна. Сонирхож байна уу?`;
+        await addDoc(collection(db,'chats',chatId,'messages'), {
+          uid: user.uid,
+          type: 'text',
+          text: greetMsg,
+          createdAt: serverTimestamp(),
+        });
+        await updateDoc(doc(db,'chats',chatId), {
+          lastMsg: greetMsg,
+          lastMsgAt: serverTimestamp(),
+          [`unread.${seeker.uid}`]: 1,
+        });
+      } catch(e) { console.warn('Initial msg failed:', e); }
       const otherUserHint = {
         id: seeker.uid,
         ner: seeker.ner || 'Ажил хайгч',
@@ -119,9 +136,9 @@ export default function Workspace() {
         photoURL: seeker.photoURL || '',
         chiglel: seeker.chiglel || '',
       };
-      navigate('/chat', { state:{ openChatId: chatId, otherUid: seeker.uid, otherUserHint } });
+      navigate('/chat', { state:{ openChatId: chatId, otherUid: seeker.uid, otherUserHint, jobTitle } });
     } catch(e) {
-      alert('Чат эхлүүлэхэд алдаа: '+e.message);
+      alert('Ажил эхлүүлэхэд алдаа: '+e.message);
     }
   };
 

@@ -5,6 +5,7 @@ import { db } from './firebase';
 import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import Finance from './pages/Finance';
 import Transfer from './pages/Transfer';
@@ -54,7 +55,7 @@ export default function App() {
       <PresenceTracker/>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace/> : <Login/>}/>
-        <Route path="/" element={<PrivateRoute><Layout/></PrivateRoute>}>
+        <Route path="/" element={<PrivateRoute><ErrorBoundary><Layout/></ErrorBoundary></PrivateRoute>}>
           <Route index element={<Dashboard/>}/>
           <Route path="ajil"           element={<JobList type="ajil"/>}/>
           <Route path="ajiltan"        element={<JobList type="ajiltan"/>}/>

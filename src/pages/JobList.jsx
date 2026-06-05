@@ -893,6 +893,33 @@ export default function JobList({ type }) {
                     const jobTitle = selected.hiilgeh_ajil || selected.alban_tushaal || cfg.cardTitle(selected) || '';
                     const chatId = await startChat(user.uid, selected.uid, jobTitle, selected.id);
                     if (!chatId) throw new Error('Chat ID хоосон ирлээ');
+                    // Auto-send initial offer message so worker knows about the request
+                    try {
+                      const greetMsg = `📋 Сайн байна уу! Би таны "${jobTitle}" зарыг сонирхож байна. Ажил эхлүүлэх боломжтой юу?`;
+                      await addDoc(collection(db,'chats',chatId,'messages'), {
+                        uid: user.uid,
+                        type: 'text',
+                        text: greetMsg,
+                        createdAt: serverTimestamp(),
+                      });
+                      // Update chat metadata
+                      const { doc: fdoc, updateDoc: fupd } = await import('firebase/firestore');
+                      await fupd(fdoc(db,'chats',chatId), {
+                        lastMsg: greetMsg,
+                        lastMsgAt: serverTimestamp(),
+                        [`unread.${selected.uid}`]: 1,
+                      });
+                      // Notify worker
+                      try {
+                        await createNotification(selected.uid, {
+                          type:'urilt',
+                          title:'Шинэ ажлын санал ирлээ 📋',
+                          body:`"${jobTitle}" — Танд ажил эхлүүлэх санал ирлээ`,
+                        });
+                      } catch(e) {}
+                    } catch(msgErr) {
+                      console.warn('Initial message send failed:', msgErr);
+                    }
                     // Build worker hint info so chat shows name immediately
                     const otherUserHint = {
                       id: selected.uid,
